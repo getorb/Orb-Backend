@@ -1,0 +1,36 @@
+# Secrets — never commit these
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.pem
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Runtime state (all user data lives under data/)
+data/*
+!data/.gitkeep
+*.db
+*.db-shm
+*.db-wal
+backend.log
+backend_err.log
+JARVIS_Files/
+JARVIS_Output/
+
+# Tooling
+.claude/
+mcps/
+agent-tools/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

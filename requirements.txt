@@ -1,0 +1,22 @@
+# Orb Backend — Python dependencies (Windows-first; see SELF_HOSTING.md)
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pydantic>=2.0
+httpx>=0.27
+pyyaml>=6.0
+mcp>=1.28              # resident /mcp tool surface for the Claude-family brain
+faster-whisper>=1.0    # local speech-to-text (first run downloads the model)
+edge-tts>=6.1          # neural TTS voice (no key needed)
+PyJWT>=2.8             # APNs provider-token auth ...
+cryptography>=42.0     # ... ES256 signing for the APNs .p8 key
+psutil>=5.9            # system stats tool + health telemetry
+pillow>=10.0           # screen bridge / screenshots
+numpy>=1.26
+pyautogui>=0.9         # desktop control tools
+pynput>=1.7
+watchdog>=4.0          # file-activity watcher
+pywin32>=306; sys_platform == "win32"
+qrcode>=7.4            # setup wizard QR codes
+
+# Optional — local TTS fallback (jtools/tts_local.py):
+#   pip install kokoro-onnx soundfile

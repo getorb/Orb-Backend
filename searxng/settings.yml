@@ -1,0 +1,18 @@
+# SearXNG config for the Orb backend — inherits SearXNG defaults, enables the
+# JSON API (off by default) so the backend can query it programmatically.
+# Optional: image/web search works without it via fallback scrapers, just worse.
+#   docker run -d --name jarvis-searxng -p 8888:8080 \
+#     -v "$PWD/searxng:/etc/searxng" --restart unless-stopped searxng/searxng
+use_default_settings: true
+
+server:
+  # Generate your own: python -c "import secrets; print(secrets.token_hex(16))"
+  secret_key: "CHANGE-ME"
+  limiter: false            # local-only instance, no rate limit needed
+  image_proxy: true
+
+search:
+  safe_search: 1            # 1 = moderate
+  formats:
+    - html
+    - json                  # the bit the default setup lacks
