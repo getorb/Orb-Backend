@@ -1395,6 +1395,41 @@ def approve_proposal(proposal_id: str) -> dict:
     return {}
 
 
+def mark_proposal(proposal_id: str, status: str, session: str = "") -> None:
+    """Track an approved proposal through its actual run (BACKEND_MIGRATION
+    07-23 §8): approved → in_progress (spawn confirmed, session name recorded)
+    → done/failed when the session closes out. The phone's optimistic
+    "Started — running on your PC" card reads these states from /api/mind/status
+    instead of the proposal just lingering at 'approved'."""
+    proposals = _load_proposals()
+    for p in proposals:
+        if p["id"] == proposal_id:
+            p["status"] = status
+            if session:
+                p["session"] = session
+            p[f"{status}_at"] = datetime.now().isoformat(timespec="seconds")
+            _save_proposals(proposals)
+            return
+
+
+def mark_proposal_for_session(session_name: str, ok: bool) -> None:
+    """Close out the proposal that spawned session `session_name`
+    (mind-<id> / proposal-<id> naming, or an explicit `session` field)."""
+    pid = ""
+    for prefix in ("mind-", "proposal-"):
+        if session_name.startswith(prefix):
+            pid = session_name[len(prefix):]
+            break
+    proposals = _load_proposals()
+    for p in proposals:
+        if p["id"] == pid or p.get("session") == session_name:
+            if p.get("status") in ("approved", "in_progress"):
+                p["status"] = "done" if ok else "failed"
+                p[f"{p['status']}_at"] = datetime.now().isoformat(timespec="seconds")
+                _save_proposals(proposals)
+            return
+
+
 def reject_proposal(proposal_id: str) -> None:
     proposals = _load_proposals()
     for p in proposals:

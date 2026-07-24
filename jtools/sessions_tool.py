@@ -452,6 +452,14 @@ async def _watch_cc_stream(name: str, proc, status_path: Path) -> None:
         except Exception:
             pass
         log_activity(name, "lifecycle", f"Session {d['status']}: {d['message'][:200]}")
+        # Proposal-spawned runs (mind-<id>/proposal-<id>) confirm their idea
+        # card: in_progress → done/failed (BACKEND_MIGRATION 07-23 §8).
+        if name.startswith(("mind-", "proposal-")):
+            try:
+                import proactive_engine as _pe
+                _pe.mark_proposal_for_session(name, d["status"] == "done")
+            except Exception:
+                pass
         # Deterministic completion push — builds must never finish silently.
         # `session=` rides the push extras so the phone opens this session's
         # feed directly (BACKEND_TODO 07-02 #3) instead of parsing the title.

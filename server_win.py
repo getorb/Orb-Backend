@@ -49,14 +49,24 @@ import stt
 import tools
 import memory_store
 import tool_registry
-import site_templates
 import intent_router
 import connectors
 import brain
 import tasks_store
 import screen_bridge
-import semantic_router
 import agent
+
+# Optional legacy modules — NOT shipped in the public snapshot (2026-07-23 trim):
+# site_templates seeds build prompts with reference URLs; semantic_router is the
+# flag-off Layer-1 embedding matcher. Both degrade to None cleanly when absent.
+try:
+    import site_templates
+except ImportError:
+    site_templates = None
+try:
+    import semantic_router
+except ImportError:
+    semantic_router = None
 
 # AGENT SPINE — the thin agentic loop (agent.py) as the conversational brain:
 # the model sees history + tools and decides to talk or call a tool, escalating to
@@ -714,7 +724,7 @@ async def run_claude_code(prompt: str, ws: WebSocket):
     else:
         # Build task — force actual file creation in a dedicated project folder
         # AND demand quality output (the bare default is ugly).
-        tpl = site_templates.match_template(prompt)
+        tpl = site_templates.match_template(prompt) if site_templates else None
         template_block = site_templates.render_template_block(tpl) + "\n" if tpl else ""
         if tpl:
             log.info(f"[claude] template injected: {tpl.name} ({tpl.reference_url})")
@@ -3388,13 +3398,14 @@ def get_conversation() -> "Conversation":
 # FastAPI
 # ---------------------------------------------------------------------------
 
-app = FastAPI(title="JARVIS")
+app = FastAPI(title="Orb Backend")
 
 # ── HTTP token gate (pre-OSS hardening, 2026-07-03) — DEFAULT OFF ─────────────
 # The funnel forwards PUBLIC traffic to Vite, and Vite proxies /api/* here from
 # 127.0.0.1 — so once the URL is known, "it came from loopback" is not a trust
 # boundary for HTTP (the WS already enforces JARVIS_TOKEN; HTTP mostly didn't).
-# JARVIS_HTTP_AUTH=1 requires X-Jarvis-Token (or ?token=) on every /api route
+# ORB_HTTP_AUTH=1 requires X-Orb-Token (preferred; X-Jarvis-Token and ?token=
+# accepted for pre-rename app builds) on every /api route
 # except the open set below. Stays OFF until the iOS app sends the header on
 # its /api calls (MAC_DELEGATION 07-03) — flipping early breaks the app's
 # panels. Internal loopback callers (scheduler relay, jarvis_notify, the nudge
@@ -3409,7 +3420,9 @@ async def _http_token_gate(request: Request, call_next):
     p = request.url.path
     if _HTTP_AUTH and p.startswith("/api/") and not p.startswith(_HTTP_AUTH_OPEN):
         tok = os.getenv("JARVIS_TOKEN", "")
-        got = request.headers.get("x-jarvis-token") or request.query_params.get("token", "")
+        got = (request.headers.get("x-orb-token")
+               or request.headers.get("x-jarvis-token")
+               or request.query_params.get("token", ""))
         if not tok or got != tok:
             return JSONResponse({"error": "unauthorized"}, status_code=401)
     return await call_next(request)
@@ -3803,7 +3816,8 @@ def _push_display_trim(text: str, cap: int = 240) -> str:
 
 async def _push_notification(title: str, body: str, kind: str | None = None, *,
                              topic: str | None = None, dedupe: bool = True,
-                             source: str = "", session: str | None = None) -> str:
+                             source: str = "", session: str | None = None,
+                             show: dict | None = None) -> str:
     """Deliver a notification via APNs (works with the app closed), falling back
     to the live WS when the app is open. Returns a human-readable outcome.
 
@@ -3848,6 +3862,10 @@ async def _push_notification(title: str, body: str, kind: str | None = None, *,
             _extra = {"id": notif_id, "full_body": display_body[:1500]}
             if session:
                 _extra["session"] = session
+            if show:
+                # kind:"show" payload (BACKEND_MIGRATION 07-23 §9) — Orb reaching
+                # out with something to SHOW: {"image": url?, "link": url?}.
+                _extra["show"] = show
             sent = await apns.broadcast(title="Orb", body=_push_display_trim(display_body),
                                         kind=kind, extra=_extra)
             if sent:
@@ -3877,6 +3895,8 @@ async def _push_notification(title: str, body: str, kind: str | None = None, *,
             msg["kind"] = kind
         if session:
             msg["session"] = session
+        if show:
+            msg["show"] = show
         delivered = sum([await _safe_ws_send(mws, msg) for mws in list(_MOBILE_CLIENTS)])
         if delivered:
             channels.append("ws")
@@ -3925,15 +3945,68 @@ async def notify_endpoint(request: Request):
     if not body:
         return Response(content='{"error":"body required"}', status_code=400,
                         media_type="application/json")
+    show = data.get("show") if isinstance(data.get("show"), dict) else None
+    if show:
+        show = {k: str(v)[:2000] for k, v in show.items() if k in ("image", "link") and v}
+        kind = kind or "show"
     result = await _push_notification(
         title, body, kind,
         topic=(data.get("topic") or None),
         dedupe=bool(data.get("dedupe", True)),
         source=str(data.get("source") or "api"),
+        show=(show or None),
     )
     log.info(f"[notify] /api/notify: {result}")
     import json as _json
     return Response(content=_json.dumps({"result": result}), media_type="application/json")
+
+
+@app.post("/api/inbox/image")
+async def inbox_image(request: Request):
+    """Phone → PC image drop (BACKEND_MIGRATION 07-23 §7). The app's chat photo
+    attach uploads here on the PC tier: {name, jpeg_b64, note?}. Writes to
+    ~/Desktop/Orb_Inbox/<name> (never overwrites — suffixes on collision) plus
+    <name>.txt when a note rides along. Agents read straight out of that folder."""
+    import base64 as _b64, json as _json, re as _re, time as _time
+    try:
+        data = await request.json()
+    except Exception:
+        return Response(content='{"error":"invalid JSON"}', status_code=400,
+                        media_type="application/json")
+    b64 = data.get("jpeg_b64") or ""
+    if not b64:
+        return Response(content='{"error":"jpeg_b64 required"}', status_code=400,
+                        media_type="application/json")
+    try:
+        raw = _b64.b64decode(b64, validate=False)
+    except Exception:
+        return Response(content='{"error":"bad base64"}', status_code=400,
+                        media_type="application/json")
+    if not raw or len(raw) > 25 * 1024 * 1024:
+        return Response(content='{"error":"empty or oversized image"}', status_code=400,
+                        media_type="application/json")
+    # sanitize to a bare filename — no separators, no traversal
+    name = Path(str(data.get("name") or "")).name
+    name = _re.sub(r"[^A-Za-z0-9._-]", "_", name).strip("._") or f"IMG_{int(_time.time())}.jpg"
+    if "." not in name:
+        name += ".jpg"
+    inbox = Path.home() / "Desktop" / "Orb_Inbox"
+    inbox.mkdir(parents=True, exist_ok=True)
+    dest = inbox / name
+    if dest.exists():
+        stem, suffix = dest.stem, dest.suffix
+        n = 1
+        while dest.exists():
+            dest = inbox / f"{stem}_{n}{suffix}"
+            n += 1
+    dest.write_bytes(raw)
+    note = (data.get("note") or "").strip()
+    if note:
+        (inbox / (dest.name + ".txt")).write_text(note, encoding="utf-8")
+    log.info(f"[inbox] image saved: {dest.name} ({len(raw)} bytes"
+             f"{', note' if note else ''})")
+    return Response(content=_json.dumps({"saved": dest.name, "bytes": len(raw)}),
+                    media_type="application/json")
 
 
 @app.get("/api/notifications/recent")
@@ -4753,16 +4826,30 @@ async def proposal_respond(req: Request):
                 if action.get("type") == "cc_session" and action.get("task"):
                     # Mind-proposed work: run EXACTLY what he approved, where he
                     # approved it to run — headless, tracked, stoppable.
+                    name = f"mind-{pid}"
                     result = await start_cc_session(
-                        action["task"], session_name=f"mind-{pid}",
+                        action["task"], session_name=name,
                         working_dir=action.get("working_dir", ""))
+                    if "PID" in result:
+                        _pe.mark_proposal(pid, "in_progress", session=name)
+                    else:
+                        _pe.mark_proposal(pid, "failed")
                     return {"ok": True, "action": "working", "session": result}
-                # Legacy feature proposals: build it on the JARVIS repo.
-                task = (f"Build this JARVIS feature (approved by user): "
+                # Feature proposals: headless tracked run (BACKEND_MIGRATION
+                # 07-23 §8) — the same flow that works for manual launches.
+                # The old visible-terminal spawn errored out with nothing
+                # watching it and the idea card never changed state.
+                task = (f"Build this approved Orb feature: "
                         f"{prop['title']} — {prop['description']}. "
                         f"Rationale: {prop['rationale']}. "
                         f"Working dir: {Path(__file__).parent}")
-                result = await start_cc_session(task, session_name=f"proposal-{pid}", visible=True)
+                name = f"proposal-{pid}"
+                result = await start_cc_session(task, session_name=name,
+                                                working_dir=str(Path(__file__).parent))
+                if "PID" in result:
+                    _pe.mark_proposal(pid, "in_progress", session=name)
+                else:
+                    _pe.mark_proposal(pid, "failed")
                 return {"ok": True, "action": "building", "session": result}
             return {"ok": False, "error": "proposal not found"}
         else:
@@ -5676,7 +5763,7 @@ async def voice_ws(ws: WebSocket):
         # exemplars. Fires ONLY a confident, read-only, offline-routable intent (the
         # hybrid policy: reads bold, actions never auto-fire here); everything else
         # falls through to the Haiku rewrite below. OFF unless JARVIS_SEMANTIC_ROUTER=1.
-        if not intent and not followup and semantic_router.enabled():
+        if not intent and not followup and semantic_router and semantic_router.enabled():
             try:
                 dec = await semantic_router.decide(cmd)
                 if dec and dec.action == "route":

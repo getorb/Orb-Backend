@@ -105,18 +105,10 @@ clear "not configured" line.
 ### Search (optional)
 
 Image and web search use a self-hosted [SearXNG](https://github.com/searxng/searxng)
-metasearch instance when one is running; without it they fall back to plain scrapers
-(same results, just less reliable — nothing breaks). The repo ships a ready config at
-`searxng/settings.yml` (it only adds the JSON API + moderate safe-search on top of the
-SearXNG defaults). Start it with Docker:
-
-```powershell
-docker run -d --name jarvis-searxng -p 8888:8080 `
-  -v "${PWD}/searxng:/etc/searxng" --restart unless-stopped searxng/searxng
-```
-
-The backend looks for it at `http://localhost:8888`. Generate your own `secret_key`
-in `searxng/settings.yml` first (`python -c "import secrets; print(secrets.token_hex(16))"`).
+metasearch instance when one is running at `http://localhost:8888`; without it they
+fall back to plain scrapers (same results, just less reliable — nothing breaks).
+Entirely optional — if you want it, follow SearXNG's own Docker instructions and
+enable the JSON API (`formats: [html, json]` in its `settings.yml`).
 
 ## 3. Run
 
@@ -245,7 +237,6 @@ before a turn hands off to the background finisher), `ORB_MCP_LATE_CAP` (600s),
 `ORB_FREE_BACKENDS`, `ORB_FREE_TIMEOUT`, `ORB_BACKEND_COOLDOWN`,
 `OLLAMA_URL`, `OLLAMA_MODEL`, `ORB_EMBED_MODEL`, `ORB_AGENT_SPINE` (1),
 `ORB_PARALLEL_TOOLS` (0), `ORB_ACK` (0), `ORB_MEMORY` (0),
-`ORB_SEMANTIC_ROUTER` / `ORB_SEMANTIC_THRESHOLD` (legacy router),
 `ORB_MOBILE_NO_WAKE`.
 
 Defaults live in source; when in doubt, grep the variable name — every read is a
@@ -265,5 +256,5 @@ single `os.getenv` line with a comment.
   `backend_err.log`.
 - **Port 8340 busy** — another instance is up; the supervisor restarts crashed
   backends automatically, so don't run two supervisors.
-- **401 on HTTP API** — you set `ORB_HTTP_AUTH=1`; send `X-Jarvis-Token: <token>`
+- **401 on HTTP API** — you set `ORB_HTTP_AUTH=1`; send `X-Orb-Token: <token>`
   (the app versions that predate the header need it off).
