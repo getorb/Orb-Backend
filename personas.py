@@ -335,3 +335,12 @@ def get(name: str | None) -> Persona:
     if not name:
         return ORB
     return PERSONAS.get(name.lower().strip(), ORB)
+
+
+def active() -> Persona:
+    """The persona THIS instance is configured as — ORB_PERSONA / JARVIS_PERSONA
+    (default Orb). Single source of truth for self-identity, so modules that build
+    their own prompts (mind, proactive synthesis, research) brand as the live
+    persona instead of hardcoding a name."""
+    import os
+    return get(os.getenv("ORB_PERSONA") or os.getenv("JARVIS_PERSONA"))

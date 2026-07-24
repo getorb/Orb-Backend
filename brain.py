@@ -719,8 +719,10 @@ async def research_card(query: str, model: str = "haiku",
             "live today, so PREFER their figures and dates over your own memory "
             "(which may be out of date). If a source gives a recent number (net "
             "worth, price, year), use it:\n----\n" + sources + "\n----\n")
+    import personas as _personas
+    _me = _personas.active().display_name
     prompt = (
-        "You are JARVIS, a British AI butler. The user asked to be told about: "
+        f"You are {_me}. The user asked to be told about: "
         f"\"{query}\".\n" + src_block + "\n"
         "Identify the MOST likely intended subject (most famous match if ambiguous). "
         "The user wants to GLANCE and get it — not read paragraphs. Reply in EXACTLY "

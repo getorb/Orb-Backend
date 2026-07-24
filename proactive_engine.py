@@ -2125,7 +2125,9 @@ async def _run_review(since_hours: float, label: str, use_synthesis: bool = Fals
     pending_cal_block = ("\n== CALENDAR ITEMS QUEUED FROM A PRIOR REVIEW, NOT YET APPLIED (phone wasn't connected) ==\n"
                          + "\n".join(f"  {c['title']} — {c['time']}" for c in pending_calendar)) if pending_calendar else ""
 
-    prompt = f"""You are JARVIS doing a {label} review ({'full synthesis, stronger model' if use_synthesis else 'quick extra check, cheaper model'}). Time: {now_str}.
+    import personas as _personas
+    _me = _personas.active().display_name
+    prompt = f"""You are {_me} doing a {label} review ({'full synthesis, stronger model' if use_synthesis else 'quick extra check, cheaper model'}). Time: {now_str}.
 Daily synthesis runs at: {next_synth}. Extra self-reviews remaining today: {extra_remaining}/{_MAX_EXTRA_REVIEWS}.
 
 This is a FULL scan — every data source available. Use all of it to build a complete plan.

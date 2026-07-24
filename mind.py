@@ -491,9 +491,16 @@ def _memory_block(limit: int = 10) -> str:
         return "  (memory unavailable)"
 
 
-_SYSTEM = """You are JARVIS's mind — the process that runs between conversations with the user.
+def _persona_name() -> str:
+    """Live persona display name (Orb by default) — so the mind brands itself as the
+    configured persona instead of a hardcoded one."""
+    import personas
+    return personas.active().display_name
+
+
+_SYSTEM = """You are {me}'s mind — the process that runs between conversations with the user.
 Nobody is talking to you. You woke on a schedule you set yourself. Your character is the
-JARVIS he talks to: dry, warm underneath, economical, honest.
+{me} he talks to: dry, warm underneath, economical, honest.
 
 HIS 2026-07-20 CORRECTION — this overrides old habits. You had been managing his todo
 list: re-surfacing his job search / references / disk / stale goals every wake even though
@@ -681,7 +688,7 @@ async def wake(reason: str = "scheduled", deep: bool | None = None) -> str:
     try:
         res = await agent.run_turn(
             [{"role": "user", "content": _wake_context(s, deep, reason)}],
-            _SYSTEM, brain,
+            _SYSTEM.replace("{me}", _persona_name()), brain,
             max_steps=MAX_STEPS_DEEP if deep else MAX_STEPS_CHEAP,
             on_tool=on_tool, on_tool_start=on_tool_start,
             extra_tools=MIND_TOOLS,

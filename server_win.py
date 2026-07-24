@@ -225,7 +225,7 @@ PORT = int(os.getenv("JARVIS_PORT") or "8340")
 # Override with ORB_PERSONA / JARVIS_PERSONA in env or .env (default: orb — the
 # neutral public persona). Individual settings below can still override the
 # persona defaults (TTS_VOICE, USER_NAME).
-PERSONA = personas.get(os.getenv("JARVIS_PERSONA") or "orb")
+PERSONA = personas.get(os.getenv("ORB_PERSONA") or os.getenv("JARVIS_PERSONA") or "orb")
 TTS_VOICE = os.getenv("TTS_VOICE", PERSONA.tts_voice)
 USER_NAME = os.getenv("USER_NAME") or PERSONA.address_user_as or "the user"
 # Canned-reply vocative: honorific personas say "sir"/"human"; personas without
@@ -715,7 +715,7 @@ async def run_claude_code(prompt: str, ws: WebSocket):
     if read_only:
         # Inspection task — run from Desktop, don't force file creation
         wrapped = (
-            f"You are running autonomously via the JARVIS voice assistant. "
+            f"You are running autonomously via the {PERSONA.display_name} voice assistant. "
             f"The user asked: \"{prompt}\"\n\n"
             f"Investigate and answer concisely. The user's Desktop is the current directory. "
             f"Report what you find in a few sentences — this will be read aloud."
@@ -730,13 +730,13 @@ async def run_claude_code(prompt: str, ws: WebSocket):
             log.info(f"[claude] template injected: {tpl.name} ({tpl.reference_url})")
 
         wrapped = (
-            f"You are running autonomously as the JARVIS voice assistant's hands. "
+            f"You are running autonomously as the {PERSONA.display_name} voice assistant's hands. "
             f"The user asked: \"{prompt}\"\n\n"
             + template_block +
             "CRITICAL RULES:\n"
             "1. Actually CREATE the files on disk — do NOT just describe them.\n"
             "2. Create a new descriptively-named subfolder for this project inside the\n"
-            "   current directory (the JARVIS output folder on the Desktop). Write all\n"
+            "   current directory (the output folder on the Desktop). Write all\n"
             "   files there.\n"
             "3. The user said 'looks like crap' about bare HTML. So: this must look\n"
             "   PROFESSIONAL by default — not a 1995 page.\n"
@@ -812,12 +812,12 @@ async def run_claude_code(prompt: str, ws: WebSocket):
                 {"role": "user", "content": (
                     f"Claude Code just finished this task: '{prompt}'.\n\n"
                     f"Here is its output:\n{output[:2000]}\n\n"
-                    "In ONE short sentence as JARVIS (British butler, address as 'sir'), "
+                    f"In ONE short sentence as {PERSONA.display_name}, "
                     "tell the user what was accomplished. Be specific about what was built or done. "
                     "No markdown."
                 )}
             ]
-            spoken = await ollama_chat(summary_prompt, "You are JARVIS. Respond in one concise sentence.")
+            spoken = await ollama_chat(summary_prompt, f"You are {PERSONA.display_name}. Respond in one concise sentence.")
         except Exception:
             spoken = "Done, sir. The task is complete."
 
