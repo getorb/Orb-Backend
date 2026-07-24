@@ -18,7 +18,7 @@ import threading
 import time
 from pathlib import Path
 
-log = logging.getLogger("jarvis.idle")
+log = logging.getLogger("orb.idle")
 
 _DATA_DIR = Path(__file__).parent.parent / "data"
 _ACTIVITY_FILE = _DATA_DIR / "last_activity.json"

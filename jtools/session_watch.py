@@ -32,7 +32,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-log = logging.getLogger("jarvis.tools.session_watch")
+log = logging.getLogger("orb.tools.session_watch")
 
 _DATA = Path(__file__).resolve().parent.parent / "data"
 _SNAPSHOT = _DATA / "live_sessions.json"

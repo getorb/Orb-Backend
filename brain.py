@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Awaitable, Callable
 
-log = logging.getLogger("jarvis")
+log = logging.getLogger("orb")
 
 MODELS = {"haiku", "sonnet", "opus", "fable"}
 GROK_MODELS = {"grok", "grok-build"}

@@ -45,6 +45,24 @@ the complete upstream repo (27 files).
 The closed-source frontend (three.js orb, overlay, HUD cards) is **not part of this
 repo** and ships in no distribution surface here.
 
+## 2026-07-23 re-measurement (full public set vs full upstream repo)
+
+Re-ran the identical-line comparison the same day this repo's snapshot shipped,
+against a fresh clone of the complete upstream repo. Findings and fixes, all
+applied before publish:
+
+- `memory.py`: the SQLite DDL was still a *textual* match with upstream's schema
+  block (kept for data compatibility). Reformulated — same semantics for existing
+  databases, zero shared lines.
+- `personas.py`: one persona-prompt line matched upstream verbatim. Rewritten.
+- The shared logger name was renamed (`orb`).
+
+After those fixes, **no file in this repo shares any distinctive line with any
+upstream file.** Every remaining identical line is language idiom
+(`from datetime import datetime`, `except asyncio.TimeoutError:`, subprocess
+boilerplate, `if __name__ == "__main__":`) or wire-protocol constants the app
+depends on (`/ws/voice`, `/api/restart`, `/api/settings/*` route strings).
+
 ## 2026-07-23 surface trim
 
 To keep the public working set to what a self-hoster actually runs, these files were

@@ -7,7 +7,7 @@ import logging
 
 from tool_registry import tool
 
-log = logging.getLogger("jarvis.tools.mind")
+log = logging.getLogger("orb.tools.mind")
 
 
 @tool(

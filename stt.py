@@ -13,7 +13,7 @@ import os
 import numpy as np
 from faster_whisper import WhisperModel
 
-log = logging.getLogger("jarvis")
+log = logging.getLogger("orb")
 
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base.en")
 # device/compute: CPU int8 is fast and reliable everywhere. The RTX 5070 (Blackwell)

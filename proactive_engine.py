@@ -46,7 +46,7 @@ from typing import Callable
 
 import psutil
 
-log = logging.getLogger("jarvis.proactive")
+log = logging.getLogger("orb.proactive")
 
 _DATA_DIR       = Path(__file__).parent / "data"
 _DATA_DIR.mkdir(parents=True, exist_ok=True)

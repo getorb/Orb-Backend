@@ -16,7 +16,7 @@ import os
 
 from tool_registry import tool
 
-log = logging.getLogger("jarvis.tools.mail")
+log = logging.getLogger("orb.tools.mail")
 
 IMAP_HOST = "imap.gmail.com"
 

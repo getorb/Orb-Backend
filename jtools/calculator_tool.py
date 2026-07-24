@@ -7,7 +7,7 @@ import operator
 
 from tool_registry import tool
 
-log = logging.getLogger("jarvis.tools.calc")
+log = logging.getLogger("orb.tools.calc")
 
 # Only these AST node types are allowed. Anything else (Call, Attribute, Subscript, etc.)
 # raises — so no arbitrary code execution.

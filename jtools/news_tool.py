@@ -9,7 +9,7 @@ import httpx
 from tool_registry import tool
 from jtools.cache_util import ttl_cache
 
-log = logging.getLogger("jarvis.tools.news")
+log = logging.getLogger("orb.tools.news")
 
 # Pre-vetted RSS feeds by topic. All work without a key.
 # NOTE: Reuters public RSS (feeds.reuters.com) was shut down and no longer

@@ -19,7 +19,7 @@ import logging
 from pathlib import Path
 from typing import Callable
 
-log = logging.getLogger("jarvis.training_watcher")
+log = logging.getLogger("orb.training_watcher")
 
 _SESSIONS_DIR = Path.home() / "Desktop" / "jarvis_sessions"
 _POLL_INTERVAL = 10  # seconds — cheap (glob + JSON parse), worth being snappy

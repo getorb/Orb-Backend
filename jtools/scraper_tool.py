@@ -7,7 +7,7 @@ import httpx
 
 from tool_registry import tool
 
-log = logging.getLogger("jarvis.tools.scraper")
+log = logging.getLogger("orb.tools.scraper")
 
 _HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) JARVIS-OS/0.2",

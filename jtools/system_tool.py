@@ -8,7 +8,7 @@ from datetime import datetime
 
 from tool_registry import tool
 
-log = logging.getLogger("jarvis.tools.system")
+log = logging.getLogger("orb.tools.system")
 
 try:
     import psutil

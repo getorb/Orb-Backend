@@ -30,7 +30,7 @@ import queue
 import time
 from pathlib import Path
 
-log = logging.getLogger("jarvis.file_watcher")
+log = logging.getLogger("orb.file_watcher")
 
 _EXCLUDE_DIR_NAMES = {
     ".git", "__pycache__", "node_modules", ".venv", "venv", "dist", "build",

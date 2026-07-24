@@ -39,7 +39,7 @@ import mcp.types as types
 from mcp.server.lowlevel import Server
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 
-log = logging.getLogger("jarvis")
+log = logging.getLogger("orb")
 
 # Injected by server_win.py at startup (init()).
 _dispatch = None            # tool_registry.dispatch

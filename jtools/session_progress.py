@@ -26,7 +26,7 @@ import os
 import time
 from pathlib import Path
 
-log = logging.getLogger("jarvis")
+log = logging.getLogger("orb")
 
 _SESSIONS_DIR = Path.home() / "Desktop" / "jarvis_sessions"
 ENABLED = os.getenv("JARVIS_SESSION_PROGRESS", "1") == "1"

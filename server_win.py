@@ -211,8 +211,8 @@ async def _settle_others_idle(origin_ws, delay: float):
     except Exception:
         pass
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [jarvis] %(message)s")
-log = logging.getLogger("jarvis")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [orb] %(message)s")
+log = logging.getLogger("orb")
 
 import personas
 
@@ -3436,7 +3436,7 @@ try:
     app.mount("/mcp", _mcp_http.build_asgi_app())
 except Exception as _mcp_e:
     _mcp_http = None
-    logging.getLogger("jarvis").warning(f"[mcp-http] mount skipped: {_mcp_e} — "
+    logging.getLogger("orb").warning(f"[mcp-http] mount skipped: {_mcp_e} — "
                                         "MCP brain will fall back to the classic loop")
 
 _SESSIONS_DIR = Path.home() / "Desktop" / "jarvis_sessions"

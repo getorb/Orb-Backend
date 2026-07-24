@@ -17,7 +17,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-log = logging.getLogger("jarvis.clipboard")
+log = logging.getLogger("orb.clipboard")
 
 _DATA_DIR     = Path(__file__).parent.parent / "data"
 _CLIP_LOG     = _DATA_DIR / "clipboard_log.jsonl"

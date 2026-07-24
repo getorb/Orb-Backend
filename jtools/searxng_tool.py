@@ -12,7 +12,7 @@ import logging
 
 import httpx
 
-log = logging.getLogger("jarvis.tools.searxng")
+log = logging.getLogger("orb.tools.searxng")
 
 _SEARX = "http://localhost:8888/search"
 _TIMEOUT = 15.0

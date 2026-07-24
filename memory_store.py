@@ -11,7 +11,7 @@ import json
 import logging
 from pathlib import Path
 
-log = logging.getLogger("jarvis")
+log = logging.getLogger("orb")
 
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(exist_ok=True)

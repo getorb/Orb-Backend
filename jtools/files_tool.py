@@ -5,7 +5,7 @@ from pathlib import Path
 
 from tool_registry import tool
 
-log = logging.getLogger("jarvis.tools.files")
+log = logging.getLogger("orb.tools.files")
 
 DESKTOP = Path.home() / "Desktop"
 WRITE_SANDBOX = DESKTOP / "JARVIS_Files"

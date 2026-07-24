@@ -8,7 +8,7 @@ from pathlib import Path
 
 from tool_registry import tool
 
-log = logging.getLogger("jarvis.tools.notes")
+log = logging.getLogger("orb.tools.notes")
 
 NOTES_PATH = Path(__file__).parent.parent / "data" / "notes.jsonl"
 NOTES_PATH.parent.mkdir(parents=True, exist_ok=True)

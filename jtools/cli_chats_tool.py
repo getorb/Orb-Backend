@@ -39,7 +39,7 @@ from pathlib import Path
 
 from tool_registry import tool
 
-log = logging.getLogger("jarvis.tools.cli_chats")
+log = logging.getLogger("orb.tools.cli_chats")
 
 CC_ROOT = Path.home() / ".claude" / "projects"
 CODEX_ROOT = Path.home() / ".codex" / "sessions"

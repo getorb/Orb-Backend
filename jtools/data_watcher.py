@@ -17,7 +17,7 @@ import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 
-log = logging.getLogger("jarvis.data_watcher")
+log = logging.getLogger("orb.data_watcher")
 
 _DATA_DIR = Path(__file__).parent.parent / "data"
 _WATCH_LOG = _DATA_DIR / "watched_data.jsonl"

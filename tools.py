@@ -15,7 +15,7 @@ import os
 
 import httpx
 
-log = logging.getLogger("jarvis")
+log = logging.getLogger("orb")
 
 # Fallback when no location is spoken. Env-driven since 2026-07-03 (OSS prep —
 # the operator's city is personal config, not source). History: this sat on a

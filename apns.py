@@ -40,7 +40,7 @@ import os
 import time
 from pathlib import Path
 
-log = logging.getLogger("jarvis.apns")
+log = logging.getLogger("orb.apns")
 
 BUNDLE_ID = os.getenv("APNS_BUNDLE_ID", "")  # your app's bundle id — no default (see .env)
 KEY_ID = os.getenv("APNS_KEY_ID", "")

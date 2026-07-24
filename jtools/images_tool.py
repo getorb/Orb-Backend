@@ -25,7 +25,7 @@ import httpx
 from tool_registry import tool
 from jtools.cache_util import ttl_cache
 
-log = logging.getLogger("jarvis.tools.images")
+log = logging.getLogger("orb.tools.images")
 
 import random
 

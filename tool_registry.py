@@ -25,7 +25,7 @@ import inspect
 import logging
 from typing import Any, Awaitable, Callable
 
-log = logging.getLogger("jarvis.tools")
+log = logging.getLogger("orb.tools")
 
 _REGISTRY: dict[str, dict] = {}
 

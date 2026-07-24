@@ -41,7 +41,7 @@ import agent
 import memory
 from jtools.activity_log import log_activity
 
-log = logging.getLogger("jarvis")
+log = logging.getLogger("orb")
 
 _DATA = Path(__file__).parent / "data"
 _STATE_FILE = _DATA / "mind_state.json"

@@ -50,7 +50,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-log = logging.getLogger("jarvis.tools.frustration")
+log = logging.getLogger("orb.tools.frustration")
 
 _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 _STATE_FILE = _DATA_DIR / "frustration_state.json"

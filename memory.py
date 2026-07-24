@@ -32,29 +32,23 @@ import sqlite3
 import time
 from pathlib import Path
 
-log = logging.getLogger("jarvis")
+log = logging.getLogger("orb")
 
-DB_PATH = Path(__file__).parent / "data" / "jarvis.db"
+_DATA_DIR = Path(__file__).parent / "data"
+DB_PATH = _DATA_DIR / "jarvis.db"   # on-disk name kept for existing installs
 
 # Kinds the schema documents; extraction clamps unknown model output to "fact".
 MEMORY_TYPES = ("fact", "preference", "project", "person", "decision")
 
-_SCHEMA = """
-CREATE TABLE IF NOT EXISTS memories (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT NOT NULL,
-    content TEXT NOT NULL,
-    source TEXT DEFAULT '',
-    importance INTEGER DEFAULT 5,
-    created_at REAL NOT NULL,
-    last_accessed REAL,
-    access_count INTEGER DEFAULT 0
-);
-CREATE VIRTUAL TABLE IF NOT EXISTS memory_fts USING fts5(
-    content, type, source,
-    content='memories', content_rowid='id'
-);
-"""
+_SCHEMA = (
+    "create table if not exists memories ("
+    "  id integer primary key autoincrement,"
+    "  type text not null, content text not null, source text default '',"
+    "  importance integer default 5, created_at real not null,"
+    "  last_accessed real, access_count integer default 0);"
+    "create virtual table if not exists memory_fts using fts5("
+    "  content, type, source, content='memories', content_rowid='id');"
+)
 
 
 def _connect() -> sqlite3.Connection:
@@ -101,15 +95,16 @@ def remember(content: str, mem_type: str = "fact", source: str = "",
         rowid = cur.lastrowid
         # External-content FTS5 is not self-maintaining — mirror the insert.
         con.execute(
-            "INSERT INTO memory_fts (rowid, content, type, source) VALUES (?, ?, ?, ?)",
+            "INSERT INTO memory_fts (rowid, content, type, source) "
+            "VALUES (?, ?, ?, ?)",
             (rowid, content, mem_type, source or ""))
         return int(rowid)
 
 
 # ── reading ──────────────────────────────────────────────────────────────────
 
-def get_important_memories(limit: int = 10) -> list[dict]:
-    """The facts most worth knowing, highest importance first."""
+def get_important_memories(limit: int = 10) -> list[dict]:  # noqa: caller contract
+    """The facts most worth knowing, ranked by importance then recency."""
     with _connect() as con:
         rows = con.execute(
             "SELECT * FROM memories ORDER BY importance DESC, created_at DESC "

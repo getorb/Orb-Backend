@@ -12,7 +12,7 @@ import httpx
 from tool_registry import tool
 from jtools.cache_util import ttl_cache
 
-log = logging.getLogger("jarvis.tools.finance")
+log = logging.getLogger("orb.tools.finance")
 
 _UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")

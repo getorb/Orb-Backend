@@ -29,7 +29,7 @@ from pathlib import Path
 
 from tool_registry import tool
 
-log = logging.getLogger("jarvis.tools.introspect")
+log = logging.getLogger("orb.tools.introspect")
 
 PROJECT = Path(__file__).resolve().parent.parent          # Desktop/Jarvis-AI
 DATA = PROJECT / "data"
