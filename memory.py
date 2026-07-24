@@ -1,8 +1,7 @@
 """Long-term memory — durable facts the assistant has learned about its user.
 
-Clean-room implementation (2026-07-18). Written fresh from the behavioral
-contract its call sites define (server_win.py, mind.py) and the on-disk
-data format of data/jarvis.db; no code inherited from any prior module.
+Written from the behavioral contract its call sites define (server_win.py,
+mind.py) and the on-disk data format of data/jarvis.db.
 
 What it does:
   * remember()               — store one durable fact (the mind + seeding use this)
