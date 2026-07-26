@@ -49,7 +49,7 @@ FEEDS = {
     ],
 }
 
-_HEADERS = {"User-Agent": "JARVIS-OS/0.2 news-fetcher"}
+_HEADERS = {"User-Agent": "Orb-OS/0.2 news-fetcher"}
 
 
 def _parse_rss(xml_text: str, max_items: int) -> list[str]:

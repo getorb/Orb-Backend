@@ -4,7 +4,7 @@ Local speech-to-text using faster-whisper.
 Replaces Chrome's Google-dependent Web Speech API. The browser captures mic
 audio and streams 16kHz PCM here; we transcribe locally on this machine.
 Proven accurate (see tests/test_whisper_roundtrip.py): 100% word accuracy,
-reliably catches the "Jarvis" wake word, ~0.3s per utterance on CPU.
+reliably catches the "Orb" wake word, ~0.3s per utterance on CPU.
 """
 
 import logging

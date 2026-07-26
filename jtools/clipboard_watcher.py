@@ -1,5 +1,5 @@
 """Clipboard watcher — detects clipboard changes and makes them available
-to JARVIS for conversation context.
+to Orb for conversation context.
 
 Uses ctypes (zero deps on Windows) to poll every 3 seconds in a daemon thread.
 Content is capped at 1000 chars to avoid bloating the context.

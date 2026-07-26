@@ -71,7 +71,7 @@ async def capture_and_analyze(question: str = "") -> str:
     path = ""
     if not result:
         # Fall back to claude -p — it reads images off disk, so write a temp file.
-        path = os.path.join(tempfile.gettempdir(), f"jarvis_vision_{int(time.time())}.jpg")
+        path = os.path.join(tempfile.gettempdir(), f"orb_vision_{int(time.time())}.jpg")
         try:
             Path(path).write_bytes(img_bytes)
             result = await _vision_claude_cli(path, question)

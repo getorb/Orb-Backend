@@ -1,7 +1,7 @@
 """Long-term memory — durable facts the assistant has learned about its user.
 
 Written from the behavioral contract its call sites define (server_win.py,
-mind.py) and the on-disk data format of data/jarvis.db.
+mind.py) and the on-disk data format of data/orb.db.
 
 What it does:
   * remember()               — store one durable fact (the mind + seeding use this)
@@ -13,12 +13,12 @@ What it does:
                                user/assistant exchange on a caller-provided
                                local model (never the paid brain)
 
-Storage is SQLite at data/jarvis.db: a `memories` table plus an
+Storage is SQLite at data/orb.db: a `memories` table plus an
 external-content FTS5 index (`memory_fts`) kept in sync on every insert.
 The same file also holds legacy `tasks`/`notes` tables from an earlier era;
 this module neither reads nor writes those.
 
-Feature gating (JARVIS_MEMORY / ORB_MEMORY) lives at the call sites, not
+Feature gating (ORB_MEMORY / ORB_MEMORY) lives at the call sites, not
 here — the mind stores facts regardless of the conversational flag.
 """
 
@@ -34,7 +34,7 @@ from pathlib import Path
 log = logging.getLogger("orb")
 
 _DATA_DIR = Path(__file__).parent / "data"
-DB_PATH = _DATA_DIR / "jarvis.db"   # on-disk name kept for existing installs
+DB_PATH = _DATA_DIR / "orb.db"   # on-disk name kept for existing installs
 
 # Kinds the schema documents; extraction clamps unknown model output to "fact".
 MEMORY_TYPES = ("fact", "preference", "project", "person", "decision")

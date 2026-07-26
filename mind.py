@@ -1,4 +1,4 @@
-"""The mind — JARVIS's interior life between conversations. Spec: AGENCY.md.
+"""The mind — Orb's interior life between conversations. Spec: AGENCY.md.
 
 v2 (2026-07-02, after ninjahawk's course-correction): "being actually useful
 beats being performatively useful." The drive economy is gone — it was a
@@ -25,7 +25,7 @@ Envelope tiers:
           launch as tracked sessions automatically
   FORBIDDEN — not in the tool surface at all (writes, input injection, spawns)
 
-Kill switch: JARVIS_MIND=0 env, or {"paused": true} in data/mind_state.json.
+Kill switch: ORB_MIND=0 env, or {"paused": true} in data/mind_state.json.
 Audit: every wake's full tool trace + note → activity log, session "mind".
 """
 
@@ -38,7 +38,7 @@ from datetime import datetime
 from pathlib import Path
 
 import agent
-import memory
+import orb_memory as memory
 from jtools.activity_log import log_activity
 
 log = logging.getLogger("orb")
@@ -50,12 +50,12 @@ _MOMENTS_FILE = _DATA / "staged_moments.json"
 _ARTIFACTS_FILE = _DATA / "mind_artifacts.jsonl"
 _NOTIF_LOG = _DATA / "notification_log.jsonl"
 
-ENABLED = os.getenv("JARVIS_MIND", "1").lower() not in ("0", "false", "no")
-MAX_WAKES_DAY = int(os.getenv("JARVIS_MIND_MAX_WAKES", "10"))
-MAX_EXPRESS_DAY = int(os.getenv("JARVIS_MIND_MAX_EXPRESS", "8"))
-EXPRESS_GAP_MIN = int(os.getenv("JARVIS_MIND_EXPRESS_GAP_MIN", "45"))
-MAX_STEPS_CHEAP = int(os.getenv("JARVIS_MIND_MAX_STEPS", "5"))
-MAX_STEPS_DEEP = int(os.getenv("JARVIS_MIND_MAX_STEPS_DEEP", "8"))
+ENABLED = os.getenv("ORB_MIND", "1").lower() not in ("0", "false", "no")
+MAX_WAKES_DAY = int(os.getenv("ORB_MIND_MAX_WAKES", "10"))
+MAX_EXPRESS_DAY = int(os.getenv("ORB_MIND_MAX_EXPRESS", "8"))
+EXPRESS_GAP_MIN = int(os.getenv("ORB_MIND_EXPRESS_GAP_MIN", "45"))
+MAX_STEPS_CHEAP = int(os.getenv("ORB_MIND_MAX_STEPS", "5"))
+MAX_STEPS_DEEP = int(os.getenv("ORB_MIND_MAX_STEPS_DEEP", "8"))
 SITUATION_CAP = 6000
 DEEP_WAKE_WINDOW = (4, 6)   # nightly consolidation window, 04:00-05:59
 
@@ -414,7 +414,7 @@ def _make_dispatcher(s: dict, trace: _WakeTrace):
                         f"(floor {EXPRESS_GAP_MIN}) — stage_moment or wait")
             if not _push_fn:
                 return "expression channel not wired"
-            out = await _push_fn(str(args.get("title") or "JARVIS")[:60],
+            out = await _push_fn(str(args.get("title") or "Orb")[:60],
                                  str(args.get("body") or "")[:1500],
                                  kind=str(args.get("kind") or "info"),
                                  source="mind")
@@ -653,7 +653,7 @@ async def wake(reason: str = "scheduled", deep: bool | None = None) -> str:
     """One incarnation: diff → investigate → act → update situation → schedule."""
     global _waking
     if not ENABLED:
-        return "mind disabled (JARVIS_MIND=0)"
+        return "mind disabled (ORB_MIND=0)"
     s = _load_state()
     if s.get("paused"):
         return "mind paused"

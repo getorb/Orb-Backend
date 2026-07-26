@@ -1,5 +1,5 @@
-"""JARVIS tools exposed as a real MCP server — lets Codex/Grok (and eventually
-Claude, per BRAIN_ARCHITECTURE.md's original spec) call JARVIS's tools with
+"""Orb tools exposed as a real MCP server — lets Codex/Grok (and eventually
+Claude, per BRAIN_ARCHITECTURE.md's original spec) call Orb's tools with
 their OWN native, well-trained tool-calling instead of the custom
 JSON-in-text ReAct protocol agent.py uses for the local/Haiku loop.
 
@@ -40,7 +40,7 @@ phone connected, or nothing it's authorized) — total no-op, identical to
 before this feature existed.
 
 Deliberately a FILE, not environment variables — tried env vars first,
-confirmed live it doesn't work: `codex mcp get jarvis` shows `env: -`, i.e.
+confirmed live it doesn't work: `codex mcp get orb` shows `env: -`, i.e.
 codex does NOT forward a live `codex exec` call's environment down to the
 MCP server subprocess it spawns (env forwarding is a fixed, per-server
 `codex mcp add --env` registration setting, made once at `codex mcp add`
@@ -48,8 +48,8 @@ time, not something a single call can inject). Reading a file at startup
 sidesteps that path entirely.
 
 Setup (one-time per CLI):
-    codex mcp add jarvis -- <venv>\\Scripts\\python.exe jarvis_mcp.py
-    grok mcp add jarvis -- <venv>\\Scripts\\python.exe jarvis_mcp.py
+    codex mcp add orb -- <venv>\\Scripts\\python.exe orb_mcp.py
+    grok mcp add orb -- <venv>\\Scripts\\python.exe orb_mcp.py
 """
 
 from __future__ import annotations
@@ -96,7 +96,7 @@ except Exception:
     pass
 _PHONE_TOOL_NAMES = {t["function"]["name"] for t in _PHONE_TOOLS if t.get("function", {}).get("name")}
 
-server = Server("jarvis")
+server = Server("orb")
 
 
 @server.list_tools()
@@ -179,7 +179,7 @@ async def main() -> None:
         await server.run(
             read_stream, write_stream,
             InitializationOptions(
-                server_name="jarvis",
+                server_name="orb",
                 server_version="1.0.0",
                 capabilities=server.get_capabilities(
                     notification_options=NotificationOptions(),

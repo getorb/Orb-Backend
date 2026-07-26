@@ -1,5 +1,5 @@
 """Real terminal session management — detect live terminal windows on the PC
-(whether JARVIS started them or not) and talk to a specific one by typing
+(whether Orb started them or not) and talk to a specific one by typing
 directly into it, the way a person would switch windows and type.
 
 Why this exists: `claude --resume <id> -p <msg>` (sessions_tool.py's relay)
@@ -154,7 +154,7 @@ def focus_and_type(hwnd: int, text: str, press_enter: bool = True) -> None:
     name="detect_pc_sessions",
     description=(
         "List every terminal window currently open on the PC — Windows Terminal, "
-        "PowerShell, or cmd — whether JARVIS started it or the user opened it manually. "
+        "PowerShell, or cmd — whether Orb started it or the user opened it manually. "
         "Use when the user asks what terminals/sessions are open, or before messaging a "
         "session to confirm it still has a live window."
     ),
@@ -201,7 +201,7 @@ async def send_to_terminal_session(session_name: str, message: str) -> str:
 
     # If this is a tracked session, use its cached hwnd (title-independent —
     # survives the terminal retitling itself) and persist any change to it.
-    sessions_dir = Path.home() / "Desktop" / "jarvis_sessions"
+    sessions_dir = Path.home() / "Desktop" / "orb_sessions"
     status_path = sessions_dir / f"{session_name}.json"
     data = {}
     if status_path.exists():
@@ -262,7 +262,7 @@ async def start_terminal_session(session_name: str, command: str = "", working_d
     from pathlib import Path
     from jtools.activity_log import log_activity
 
-    sessions_dir = Path.home() / "Desktop" / "jarvis_sessions"
+    sessions_dir = Path.home() / "Desktop" / "orb_sessions"
     sessions_dir.mkdir(parents=True, exist_ok=True)
     wd = working_dir or str(Path.home() / "Desktop")
     wt = shutil.which("wt") or "wt.exe"

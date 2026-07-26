@@ -9,7 +9,7 @@ from datetime import datetime
 
 from tool_registry import tool
 
-_SESSIONS_DIR = Path.home() / "Desktop" / "jarvis_sessions"
+_SESSIONS_DIR = Path.home() / "Desktop" / "orb_sessions"
 
 STOP_WORDS = ("stop", "cancel", "abort", "kill", "terminate")
 PAUSE_WORDS = ("pause", "hold", "wait", "suspend")

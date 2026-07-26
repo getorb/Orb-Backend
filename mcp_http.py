@@ -1,6 +1,6 @@
-"""JARVIS's tools served over MCP *streamable HTTP* from INSIDE the live backend.
+"""Orb's tools served over MCP *streamable HTTP* from INSIDE the live backend.
 
-Why this exists (2026-07-02, the MCP-rebuild night): the stdio `jarvis_mcp.py`
+Why this exists (2026-07-02, the MCP-rebuild night): the stdio `orb_mcp.py`
 server is spawned cold by each CLI turn. Measured live tonight: claude's first
 turn ran to completion while the spawned server was still `"status": "pending"`
 in the init event — the model genuinely had zero tools and confabulated about
@@ -26,7 +26,7 @@ per-connection context (_current_client) a normal agent-loop call would have.
 Single active turn at a time — same accepted single-user simplification as
 the codex relay file; turns are already serialized upstream.
 
-The stdio `jarvis_mcp.py` stays as-is for Codex/Grok (registered with their
+The stdio `orb_mcp.py` stays as-is for Codex/Grok (registered with their
 CLIs once via `mcp add`); this module is what the claude-family brain uses.
 """
 from __future__ import annotations
@@ -74,7 +74,7 @@ def clear_active_turn() -> None:
     set_active_turn(None)
 
 
-server = Server("jarvis")
+server = Server("orb")
 
 
 @server.list_tools()
@@ -93,7 +93,7 @@ async def list_tools() -> list[types.Tool]:
         ))
     # Phone connector tools for the turn in flight — same OpenAI function-
     # calling shape the phone always sends; `parameters` is already a JSON
-    # Schema object, usable as inputSchema as-is (same as jarvis_mcp.py).
+    # Schema object, usable as inputSchema as-is (same as orb_mcp.py).
     for t in (_ACTIVE or {}).get("extra_tools") or []:
         fn = t.get("function") or {}
         if not fn.get("name"):

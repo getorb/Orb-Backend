@@ -1,11 +1,11 @@
 """
 Action connectors — voice commands that take REAL local action.
 
-This is JARVIS's first step from narrator to actuator: media transport
+This is Orb's first step from narrator to actuator: media transport
 (play/pause/next/prev), system volume, "start my music", and opening saved
 sites / raw URLs / saved apps.
 
-SAFETY (hard constraint — see memory: jarvis-safety-guardrail):
+SAFETY (hard constraint — see memory: orb-safety-guardrail):
   Everything here is an ALLOWLIST of non-destructive actions. There is NO
   file deletion, NO arbitrary shell from voice, NO system mutation beyond
   media keys / volume / launching an app or URL. Media + volume go through
@@ -13,7 +13,7 @@ SAFETY (hard constraint — see memory: jarvis-safety-guardrail):
   string interpolation), and URLs are validated to http(s) first. Adding a
   new capability here should keep that property.
 
-Preferences live in data/preferences.json so JARVIS can be tuned to "how the
+Preferences live in data/preferences.json so Orb can be tuned to "how the
 user likes things" (favourite music source, saved sites/apps). The matcher
 is pure/deterministic and importable on any OS (so it's unit-testable
 headless); only the action *execution* is Windows-specific and no-ops
@@ -198,7 +198,7 @@ def _playlist_video_ids(playlist_url: str) -> list[str]:
 
 
 def start_music() -> None:
-    """Start music — returns IMMEDIATELY so JARVIS can confirm right away; the
+    """Start music — returns IMMEDIATELY so Orb can confirm right away; the
     slow part (yt-dlp playlist fetch) runs in a background thread so the user
     isn't left waiting in silence."""
     threading.Thread(target=_do_start_music, daemon=True).start()
@@ -293,7 +293,7 @@ _OPEN_URL = re.compile(
     re.IGNORECASE)
 # General opener: "open / go to / pull up <single-token>" — a bare website or
 # app NAME (no spaces). Single token only, so multi-word phrases aren't treated
-# as sites ("open the pod bay doors" won't match). This is what gives JARVIS
+# as sites ("open the pod bay doors" won't match). This is what gives Orb
 # general website logic ("open reddit" -> reddit.com) instead of only hardcoded
 # links.
 _OPEN_GENERIC = re.compile(

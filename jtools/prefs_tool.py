@@ -1,10 +1,10 @@
-"""Self-modification preferences — JARVIS reads and writes its own behavior settings.
+"""Self-modification preferences — Orb reads and writes its own behavior settings.
 
 When the user says "don't notify me about X" or "always tell me about Y" or
-"change your personality to be more concise", JARVIS calls set_preference and
+"change your personality to be more concise", Orb calls set_preference and
 it takes effect immediately on the next turn (injected into system prompt).
 
-Preferences are stored in data/jarvis_prefs.json.
+Preferences are stored in data/orb_prefs.json.
 """
 
 import json
@@ -13,7 +13,7 @@ from pathlib import Path
 
 from tool_registry import tool
 
-_PREFS_PATH = Path(__file__).parent.parent / "data" / "jarvis_prefs.json"
+_PREFS_PATH = Path(__file__).parent.parent / "data" / "orb_prefs.json"
 _PREFS_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 

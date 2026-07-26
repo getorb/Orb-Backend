@@ -5,7 +5,7 @@ and control. Source of truth is `server_win.py` â€” every route is defined 
 docstring; this file is the map, not the spec.
 
 Auth: the WebSocket requires `?token=<ORB_TOKEN>`. HTTP routes require
-`X-Orb-Token` (legacy `X-Jarvis-Token` or `?token=` also accepted) when `ORB_HTTP_AUTH=1`; health/persona/card/screen
+`X-Orb-Token` (legacy `X-Orb-Token` or `?token=` also accepted) when `ORB_HTTP_AUTH=1`; health/persona/card/screen
 stay open.
 
 ## WebSocket â€” `/ws/voice`

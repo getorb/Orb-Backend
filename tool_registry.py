@@ -1,5 +1,5 @@
 """
-JARVIS Tool Registry — function-calling tools that Qwen can decide to invoke.
+Orb Tool Registry — function-calling tools that Qwen can decide to invoke.
 
 This replaces brittle keyword routing ("if 'weather' in text...") with the
 model itself reasoning about which tool to call. Tools register themselves
@@ -32,7 +32,7 @@ _REGISTRY: dict[str, dict] = {}
 
 def tool(name: str, description: str, parameters: dict[str, dict],
          required: list[str] | None = None) -> Callable:
-    """Decorator to register a function as a JARVIS tool.
+    """Decorator to register a function as a Orb tool.
 
     parameters maps argument name -> JSONSchema-ish dict ({type, description, enum?})
     """

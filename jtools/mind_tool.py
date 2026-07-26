@@ -25,7 +25,7 @@ async def mind_status() -> str:
     import mind
     s = mind.status()
     if not s.get("enabled"):
-        return "The mind is switched off right now (JARVIS_MIND=0)."
+        return "The mind is switched off right now (ORB_MIND=0)."
     if s.get("paused"):
         return "The mind is paused."
     bits = []

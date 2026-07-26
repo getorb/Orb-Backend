@@ -1,6 +1,6 @@
 """SearXNG-backed search — the PRIMARY source for both images and web info.
 
-Self-hosted metasearch at localhost:8888 (Docker container `jarvis-searxng`).
+Self-hosted metasearch at localhost:8888 (Docker container `orb-searxng`).
 It aggregates many engines (Google/Bing/Brave/DDG/…), so no single provider
 throttles or locks us out — fixing the inaccurate/empty results we got from
 scraping Bing directly. Keyless. SafeSearch is moderate by default (block

@@ -220,9 +220,9 @@ def set_surface(query: str, mode: str) -> str:
     name="set_mission_mode",
     description=(
         "Set whether a mission is SILENT (background context only — never generates "
-        "a proactive nudge/note/push, the default) or ACTIVE-DRIVE (JARVIS may "
+        "a proactive nudge/note/push, the default) or ACTIVE-DRIVE (Orb may "
         "proactively surface progress and nudges on it). Use 'active-drive' only "
-        "when the user explicitly wants JARVIS driving a goal; use 'silent' to stop "
+        "when the user explicitly wants Orb driving a goal; use 'silent' to stop "
         "it nagging about one. Match by a few words from the mission text."
     ),
     parameters={

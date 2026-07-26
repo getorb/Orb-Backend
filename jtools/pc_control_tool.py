@@ -1,6 +1,6 @@
 """PC control — mouse, keyboard, window management.
 
-Gives JARVIS hands on the desktop. Ask it to click things, type text,
+Gives Orb hands on the desktop. Ask it to click things, type text,
 press shortcuts, or bring windows into focus. All actions are confirmed
 before execution when destructive.
 """

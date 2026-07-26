@@ -70,7 +70,7 @@ async def self_audit(check: str = "all") -> str:
             if _brain.claude_available():
                 claude_models = "/".join(sorted(_brain.MODELS))
                 import os as _os
-                mcp_on = _os.getenv("JARVIS_MCP_BRAIN", "1") != "0"
+                mcp_on = _os.getenv("ORB_MCP_BRAIN", "1") != "0"
                 available.append(f"{claude_models} (claude -p, "
                                  f"{'MCP brain w/ resumed session' if mcp_on else 'classic loop'})")
         except Exception:

@@ -57,7 +57,7 @@ _CC_EXCLUDE = ("--orb-brain", "AppData-Local-Temp", "-Temp-claude-")
 # most stable tell: every Orb conversational delegation (grok/codex) embeds
 # the shared conversational-feel block verbatim.
 _ORB_MARKERS = (
-    "You are JARVIS", "You are Orb", "JARVIS's mind",
+    "You are Orb", "You are Orb", "Orb's mind",
     "a real presence the person actually talks WITH",
     "real engagement is the cardinal sin",
 )

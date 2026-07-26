@@ -16,7 +16,7 @@ Safety boundary (honors the never-destructive-on-autonomous-surfaces rule):
   • READS are broad — the project tree, ~/.orb_brain, the Desktop, and Orb's own
     Claude Code session logs — but NEVER hand back a credential file (.env/.p8/…).
   • WRITES are scoped to Orb's OWN state — the data/ dir, ~/.orb_brain, and
-    Desktop/JARVIS_Files — and refuse source code (*.py) and engine-owned files.
+    Desktop/Orb_Files — and refuse source code (*.py) and engine-owned files.
     So an autonomous turn can edit its knowledge, notes and situation model, but
     cannot rewrite the running backend's code out from under itself. Source-level
     self-modification stays behind run_claude_code + the restart tool.
@@ -31,14 +31,14 @@ from tool_registry import tool
 
 log = logging.getLogger("orb.tools.introspect")
 
-PROJECT = Path(__file__).resolve().parent.parent          # Desktop/Jarvis-AI
+PROJECT = Path(__file__).resolve().parent.parent          # Desktop/Orb-Backend
 DATA = PROJECT / "data"
 DESKTOP = Path.home() / "Desktop"
 ORB_BRAIN = Path.home() / ".orb_brain"
 CC_LOGS = Path.home() / ".claude" / "projects"
 
 _READ_ROOTS = [PROJECT, DESKTOP, ORB_BRAIN, CC_LOGS]
-_WRITE_ROOTS = [DATA, ORB_BRAIN, DESKTOP / "JARVIS_Files"]
+_WRITE_ROOTS = [DATA, ORB_BRAIN, DESKTOP / "Orb_Files"]
 
 # Engine-owned files that have their own proper tools — never let a raw write
 # clobber them (external edits to active_plan.json don't stick anyway; the rest
@@ -99,7 +99,7 @@ def _resolve_write(path: str) -> Path:
     p = p.resolve()
     if not any(_within(p, r) for r in _WRITE_ROOTS):
         raise ValueError("writes are limited to your own state: the data folder, "
-                         "~/.orb_brain, or Desktop/JARVIS_Files")
+                         "~/.orb_brain, or Desktop/Orb_Files")
     if _is_secret(p):
         raise ValueError("can't write credential files")
     if p.suffix.lower() == ".py":
@@ -220,7 +220,7 @@ async def read_backend_errors(lines: int = 40) -> str:
     name="write_self_file",
     description=(
         "Write a file into your OWN state — the data folder, ~/.orb_brain, or "
-        "Desktop/JARVIS_Files. This is real self-modification of your notes, knowledge, "
+        "Desktop/Orb_Files. This is real self-modification of your notes, knowledge, "
         "and working files (no Claude Code spawn, no timeout). You cannot write source "
         "code (*.py) or engine-managed files here — use run_claude_code for code changes."
     ),

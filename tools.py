@@ -1,5 +1,5 @@
 """
-Real tools JARVIS can use itself (no Claude Code needed):
+Real tools Orb can use itself (no Claude Code needed):
 - weather  (open-meteo, free, no API key)
 - web search (DuckDuckGo, free, no API key)
 
@@ -20,8 +20,8 @@ log = logging.getLogger("orb")
 # Fallback when no location is spoken. Env-driven since 2026-07-03 (OSS prep —
 # the operator's city is personal config, not source). History: this sat on a
 # hardcoded city ~90mi off until the 07-02 test battery caught a no-location
-# weather ask answering for the wrong place — set JARVIS_DEFAULT_LOCATION.
-DEFAULT_LOCATION = os.getenv("JARVIS_DEFAULT_LOCATION", "New York")
+# weather ask answering for the wrong place — set ORB_DEFAULT_LOCATION.
+DEFAULT_LOCATION = os.getenv("ORB_DEFAULT_LOCATION", "New York")
 
 # US states -> a sensible major city (so "weather in North Carolina" doesn't
 # resolve to some tiny matching town). Lowercased keys.

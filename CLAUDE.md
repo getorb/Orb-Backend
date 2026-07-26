@@ -43,7 +43,7 @@ Pushes go phone-ward through APNs (`apns.py`) with the user's own key.
 - `brain.py` — brain router: Claude CLI, free backends, local floor, cooldowns.
 - `tool_registry.py` + `jtools/` — every tool, one file each, registered with
   `@tool(...)`; `import_all_tools()` loads them.
-- `mcp_http.py` + `jarvis_mcp.py` — the tool surface as MCP: resident loopback
+- `mcp_http.py` + `orb_mcp.py` — the tool surface as MCP: resident loopback
   `/mcp` for the Claude-family brain; stdio server for Codex/Grok.
 - `proactive_engine.py` — zero-AI collection ticks + twice-daily synthesis at fixed
   clock hours + the scheduler (user reminders survive restarts; items missed while

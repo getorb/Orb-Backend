@@ -13,10 +13,10 @@ forever covers the app-closed case, with honest pushes instead of silence:
     one "Session looks dead" alert — crashes were invisible before
     (completion pushes only fire on clean ends via sessions_tool.wire_notify).
 
-Zero AI, zero new state files: reads the same Desktop/jarvis_sessions/*.json
+Zero AI, zero new state files: reads the same Desktop/orb_sessions/*.json
 records everything else uses; pacing state is in-memory (a restart just means
 one fresh "Still on it" for a long-runner — acceptable). Kill switch:
-JARVIS_SESSION_PROGRESS=0.
+ORB_SESSION_PROGRESS=0.
 """
 import asyncio
 import hashlib
@@ -28,10 +28,10 @@ from pathlib import Path
 
 log = logging.getLogger("orb")
 
-_SESSIONS_DIR = Path.home() / "Desktop" / "jarvis_sessions"
-ENABLED = os.getenv("JARVIS_SESSION_PROGRESS", "1") == "1"
-START_AFTER = float(os.getenv("JARVIS_SESSION_PROGRESS_AFTER_S", "90"))
-EVERY_S = float(os.getenv("JARVIS_SESSION_PROGRESS_EVERY_S", "240"))
+_SESSIONS_DIR = Path.home() / "Desktop" / "orb_sessions"
+ENABLED = os.getenv("ORB_SESSION_PROGRESS", "1") == "1"
+START_AFTER = float(os.getenv("ORB_SESSION_PROGRESS_AFTER_S", "90"))
+EVERY_S = float(os.getenv("ORB_SESSION_PROGRESS_EVERY_S", "240"))
 TICK_S = 45.0
 # Delegated work only — terminal/file_activity/supervisor rows are ambient.
 _WATCH_TYPES = {"cc", "grok-build", "codex"}
@@ -146,7 +146,7 @@ async def _tick() -> None:
 
 async def run_forever() -> None:
     if not ENABLED:
-        log.info("[session-progress] disabled (JARVIS_SESSION_PROGRESS=0)")
+        log.info("[session-progress] disabled (ORB_SESSION_PROGRESS=0)")
         return
     if _push_fn is None:
         log.warning("[session-progress] no push fn wired — not running")

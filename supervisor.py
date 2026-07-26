@@ -36,7 +36,7 @@ PY = str(ROOT / "venv" / "Scripts" / "python.exe")
 
 
 def _env_port() -> str:
-    """ORB_PORT / JARVIS_PORT from .env or the process env — the supervisor must
+    """ORB_PORT / ORB_PORT from .env or the process env — the supervisor must
     poll the same port the server binds, or a self-hoster who moves the port gets
     an eternal restart loop."""
     vals = {}
@@ -47,8 +47,8 @@ def _env_port() -> str:
                 vals[k.strip()] = v.strip().strip('"').strip("'")
     except Exception:
         pass
-    return (vals.get("ORB_PORT") or vals.get("JARVIS_PORT")
-            or os.environ.get("ORB_PORT") or os.environ.get("JARVIS_PORT") or "8340")
+    return (vals.get("ORB_PORT") or vals.get("ORB_PORT")
+            or os.environ.get("ORB_PORT") or os.environ.get("ORB_PORT") or "8340")
 
 
 HEALTH = f"http://localhost:{_env_port()}/api/health"
@@ -57,7 +57,7 @@ GRACE_S = 30             # boot time before health checks start counting
 CHECK_EVERY_S = 15
 FAILS_TO_RESTART = 3     # consecutive failed health checks => hung, bounce it
 FAST_CRASH_S = 60        # died sooner than this after launch = "fast crash"
-STATUS = Path.home() / "Desktop" / "jarvis_sessions" / "backend-supervisor.json"
+STATUS = Path.home() / "Desktop" / "orb_sessions" / "backend-supervisor.json"
 
 
 def _status(status: str, message: str) -> None:
@@ -65,7 +65,7 @@ def _status(status: str, message: str) -> None:
         STATUS.parent.mkdir(parents=True, exist_ok=True)
         STATUS.write_text(json.dumps({
             "session": "backend-supervisor", "status": status,
-            "type": "supervisor", "description": "Keeps the JARVIS backend alive",
+            "type": "supervisor", "description": "Keeps the Orb backend alive",
             "message": message, "machine": "pc", "pid": os.getpid(),
             "updated": datetime.now().isoformat(timespec="seconds"),
         }, indent=2), encoding="utf-8")
@@ -82,7 +82,7 @@ def _healthy() -> bool:
 
 
 def _launch(out, err) -> subprocess.Popen:
-    env = dict(os.environ, JARVIS_SUPERVISED="1")
+    env = dict(os.environ, ORB_SUPERVISED="1")
     return subprocess.Popen(
         [PY, "server_win.py"], cwd=str(ROOT), stdout=out, stderr=err, env=env,
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))

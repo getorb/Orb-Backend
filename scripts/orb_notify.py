@@ -12,16 +12,16 @@ import sys, os, json, pathlib, urllib.request, urllib.error, argparse
 
 
 def _token() -> str:
-    """ORB_TOKEN (or legacy JARVIS_TOKEN) from the environment, else from the
+    """ORB_TOKEN (or legacy ORB_TOKEN) from the environment, else from the
     repo .env — so this keeps working when the backend's HTTP token gate
     (ORB_HTTP_AUTH) is on."""
-    tok = os.environ.get("ORB_TOKEN", "") or os.environ.get("JARVIS_TOKEN", "")
+    tok = os.environ.get("ORB_TOKEN", "") or os.environ.get("ORB_TOKEN", "")
     if tok:
         return tok
     try:
         env = pathlib.Path(__file__).resolve().parent.parent / ".env"
         for line in env.read_text(encoding="utf-8").splitlines():
-            if line.startswith(("ORB_TOKEN=", "JARVIS_TOKEN=")):
+            if line.startswith(("ORB_TOKEN=", "ORB_TOKEN=")):
                 return line.split("=", 1)[1].strip().strip('"').strip("'")
     except Exception:
         pass

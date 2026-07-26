@@ -82,7 +82,7 @@ Every variable is documented in [.env.example](.env.example) and
 | `agent.py` | The thin agent loop — the model decides talk-vs-tool, the harness executes |
 | `brain.py` | Brain router: Claude CLI, Grok/Codex, free backends, local floor, cooldowns |
 | `tool_registry.py` + `jtools/` | Every tool, one file each, registered with `@tool(...)` |
-| `mcp_http.py` + `jarvis_mcp.py` | The tool surface as MCP: resident loopback `/mcp` for the Claude brain; stdio for Codex/Grok |
+| `mcp_http.py` + `orb_mcp.py` | The tool surface as MCP: resident loopback `/mcp` for the Claude brain; stdio for Codex/Grok |
 | `proactive_engine.py` | Zero-AI collection ticks, twice-daily synthesis, the scheduler (reminders survive restarts) |
 | `mind.py` | Between-conversation agency: situation model, budgeted wakes, approval-gated proposals |
 | `stt.py` / `personas.py` | Ears (faster-whisper) and voice (neural TTS + persona definitions) |

@@ -1,5 +1,5 @@
 """
-Persistent task / working-memory for JARVIS — a weighted to-do list so JARVIS
+Persistent task / working-memory for Orb — a weighted to-do list so Orb
 actually remembers what it's been asked to do, instead of giving context-free
 fluff ("operating at optimal parameters"). This is the user's "weighted
 priority list."
@@ -108,7 +108,7 @@ def spoken_list(addr: str = "sir") -> str:
 
 
 def summary_for_prompt() -> str:
-    """Compact open-task line injected into the LLM system prompt so JARVIS is
+    """Compact open-task line injected into the LLM system prompt so Orb is
     aware of what it's tracking. Empty string if nothing open."""
     op = list_open()
     if not op:

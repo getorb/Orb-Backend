@@ -26,7 +26,7 @@ Team/bundle coherence: Apple delivers a push only if the signing key's TEAM owns
 target app's APNS_BUNDLE_ID. A self-hoster's own key therefore CANNOT push to the public
 App Store Orb app (signed under the owner's team) — only to an iOS build they sign under
 their own team + bundle id. Without that they still get in-app WebSocket notifications
-while the app is open (JARVIS_WS_NOTIFICATIONS); closed-app push needs their own build.
+while the app is open (ORB_WS_NOTIFICATIONS); closed-app push needs their own build.
 
 Privacy: nothing sensitive in plaintext — the payload transits Apple's servers. Put a
 `kind` in the payload so the phone's notification-tap routing can open the right surface

@@ -1,4 +1,4 @@
-"""Training job watcher — monitors ~/Desktop/jarvis_sessions/*.json for job
+"""Training job watcher — monitors ~/Desktop/orb_sessions/*.json for job
 progress and completions.
 
 Polls every 10 seconds. For any session that is NOT a CC session (type != "cc"):
@@ -21,7 +21,7 @@ from typing import Callable
 
 log = logging.getLogger("orb.training_watcher")
 
-_SESSIONS_DIR = Path.home() / "Desktop" / "jarvis_sessions"
+_SESSIONS_DIR = Path.home() / "Desktop" / "orb_sessions"
 _POLL_INTERVAL = 10  # seconds — cheap (glob + JSON parse), worth being snappy
 
 # session_name -> last known (status, message) so we only act on real changes

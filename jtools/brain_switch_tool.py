@@ -33,7 +33,7 @@ async def switch_brain(model: str, reason: str = "") -> str:
         return f"Unknown model '{model}'. Valid options: {', '.join(sorted(valid))}."
     # Guard (2026-07-01 — "Orb used Opus on its own, that's a problem"): this
     # tool is for USER-requested switches only. If the current user turn never
-    # mentioned switching or any model, the switch is JARVIS's own idea — route
+    # mentioned switching or any model, the switch is Orb's own idea — route
     # it through the propose flow (human yes/no) instead of switching silently.
     try:
         from server_win import _current_client
@@ -74,7 +74,7 @@ async def switch_brain(model: str, reason: str = "") -> str:
         "genuinely go better on a different model), not something the user asked for. Say the "
         "suggestion in your own voice; the switch only happens if they say yes. If the USER "
         "explicitly asks to switch models, use switch_brain directly instead — this tool is "
-        "only for JARVIS-initiated suggestions."
+        "only for Orb-initiated suggestions."
     ),
     parameters={
         "model": {"type": "string", "description": "One of: haiku, sonnet, opus, fable, grok, grok-build, codex, codex-mini, codex-full, local"},

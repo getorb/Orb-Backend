@@ -1,6 +1,6 @@
 """
-Tiny persistent memory for JARVIS — conversation history survives restarts so
-JARVIS feels like a presence that remembers, not a fresh script every launch.
+Tiny persistent memory for Orb — conversation history survives restarts so
+Orb feels like a presence that remembers, not a fresh script every launch.
 
 Stored as JSON Lines (one role/content pair per line) in data/conversation.jsonl.
 Each launch loads the last N exchanges into the in-memory conversation so the
@@ -64,7 +64,7 @@ def append(role: str, content: str):
 
 
 def clear():
-    """Wipe history (e.g., user says 'Jarvis, forget everything')."""
+    """Wipe history (e.g., user says 'Orb, forget everything')."""
     try:
         if CONV_FILE.exists():
             CONV_FILE.unlink()

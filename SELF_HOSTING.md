@@ -194,7 +194,7 @@ Common:
 | Variable | Default | Meaning |
 |---|---|---|
 | `USER_NAME` | — | What the assistant calls you |
-| `ORB_PERSONA` | `orb` | `orb`, `jarvis`, or `ultron` (voice + wake word + character) |
+| `ORB_PERSONA` | `orb` | `orb`, `orb`, or `ultron` (voice + wake word + character) |
 | `TTS_VOICE` | persona's | Edge-TTS voice override |
 | `ORB_DEFAULT_LOCATION` | `New York` | Weather fallback when no location is spoken |
 | `ORB_HTTP_AUTH` | `0` | `1` = require the token on HTTP `/api/*` too |

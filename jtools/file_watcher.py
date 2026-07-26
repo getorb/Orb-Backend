@@ -39,8 +39,8 @@ _EXCLUDE_DIR_NAMES = {
 }
 _EXCLUDE_SUFFIXES = (".pyc", ".pyo", ".log", ".lock", ".tmp",
                      ".db", ".db-shm", ".db-wal")  # sqlite + sidecars — runtime
-                     # state churn, not work (data/jarvis.db-shm was flooding
-                     # the JARVIS feed alongside the mcps tmp files, 07-03)
+                     # state churn, not work (data/orb.db-shm was flooding
+                     # the Orb feed alongside the mcps tmp files, 07-03)
 _OWN_DATA_DIR = (Path(__file__).parent.parent / "data").resolve()
 _OWN_LOG_FILES = {"backend.log", "backend_err.log"}
 
@@ -61,7 +61,7 @@ def _is_excluded(path: Path, project_root: Path) -> bool:
         return True
     try:
         if path.resolve().is_relative_to(_OWN_DATA_DIR):
-            return True  # JARVIS's own runtime state -- watching this self-loops
+            return True  # Orb's own runtime state -- watching this self-loops
     except (ValueError, OSError):
         pass
     if path.name in _OWN_LOG_FILES:
@@ -183,7 +183,7 @@ def _flush(project: str, files: set) -> None:
     log_activity(project, "file_write", text, files=names[:20])
 
     try:
-        d = _Path.home() / "Desktop" / "jarvis_sessions"
+        d = _Path.home() / "Desktop" / "orb_sessions"
         d.mkdir(parents=True, exist_ok=True)
         status_path = d / f"{project}.json"
         existing = {}

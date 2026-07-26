@@ -1,5 +1,5 @@
 """
-JARVIS Server — Windows Edition
+Orb Server — Windows Edition
 Voice AI with local Ollama brain + Edge TTS + Claude Code integration + desktop commands.
 """
 
@@ -24,20 +24,16 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 # Load .env into the environment BEFORE any os.getenv calls below. Without
-# this, JARVIS_TOKEN (and other settings) were never read from .env, so the
+# this, ORB_TOKEN (and other settings) were never read from .env, so the
 # server auto-generated a fresh random token every restart that never matched
 # the bundle/config.json — the real cause of the mobile auth failures.
-_env_path = Path(__file__).parent / ".env"
-if _env_path.exists():
-    for _line in _env_path.read_text(encoding="utf-8").splitlines():
-        _line = _line.strip()
-        if _line and not _line.startswith("#") and "=" in _line:
-            _k, _, _v = _line.partition("=")
-            os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
-
-# ORB_* → JARVIS_* aliasing (docs teach ORB_*; legacy names keep working).
-# Must run after .env lands in os.environ and before any os.getenv below.
-import orb_env  # noqa: E402  (side effect: orb_env.apply())
+_dotenv = Path(__file__).resolve().with_name(".env")
+if _dotenv.is_file():
+    for _entry in map(str.strip, _dotenv.read_text(encoding="utf-8").splitlines()):
+        if not _entry or _entry[0] == "#" or "=" not in _entry:
+            continue
+        _name, _sep, _value = _entry.partition("=")
+        os.environ.setdefault(_name.strip(), _value.strip().strip("\"'"))
 
 import edge_tts
 import httpx
@@ -70,24 +66,24 @@ except ImportError:
 
 # AGENT SPINE — the thin agentic loop (agent.py) as the conversational brain:
 # the model sees history + tools and decides to talk or call a tool, escalating to
-# Haiku only when it needs a bigger brain. Default ON. Set JARVIS_AGENT_SPINE=0 to
+# Haiku only when it needs a bigger brain. Default ON. Set ORB_AGENT_SPINE=0 to
 # fall back to the legacy router-first pipeline (kept for A/B + safety).
-_AGENT_SPINE = os.getenv("JARVIS_AGENT_SPINE", "1").lower() not in ("0", "false", "no")
+_AGENT_SPINE = os.getenv("ORB_AGENT_SPINE", "1").lower() not in ("0", "false", "no")
 
 # INSTANT-ACK layer — when the spine runs on a slow claude brain, speak a short
 # in-character "heard you" BEFORE the real answer so the turn never feels dead
 # during the ~10-13s Haiku latency. Sent as an ADDITIVE {type:"ack"} WS message
 # (a client that doesn't handle it simply ignores it — no breakage). DEFAULT OFF
 # until the mobile UI wires ack-then-answer playback (see MAC_DELEGATION.md);
-# flip on with JARVIS_ACK=1.
-_AGENT_ACK = os.getenv("JARVIS_ACK", "0").lower() not in ("0", "false", "no")
+# flip on with ORB_ACK=1.
+_AGENT_ACK = os.getenv("ORB_ACK", "0").lower() not in ("0", "false", "no")
 
 # Long-term memory (memory.py): inject relevant learned facts into the agent's
 # context, and distill new facts after each turn (extraction runs on the LOCAL
 # model, off the claude -p budget). DEFAULT OFF — the "knowing when to say what"
 # relevance gate needs tuning WITH the user before it shapes live replies. See
-# PERSONALIZATION_PLAN.md. Enable with JARVIS_MEMORY=1.
-_AGENT_MEMORY = os.getenv("JARVIS_MEMORY", "0").lower() not in ("0", "false", "no")
+# PERSONALIZATION_PLAN.md. Enable with ORB_MEMORY=1.
+_AGENT_MEMORY = os.getenv("ORB_MEMORY", "0").lower() not in ("0", "false", "no")
 
 
 async def _safe_send(ws: WebSocket, payload: dict):
@@ -136,7 +132,7 @@ async def _broadcast_status(state: str):
         await _safe_send(c, {"type": "status", "state": state})
 
 
-# The CURRENT working focus — what JARVIS is on right now. SHARED across all
+# The CURRENT working focus — what Orb is on right now. SHARED across all
 # connections (a new chat window must not forget what's being worked on); persists
 # until explicitly dropped ("forget that" / "never mind"). Single-user assistant,
 # so a process-global focus is correct.
@@ -218,14 +214,14 @@ import personas
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3.5:9b")
-# HTTP/WS bind port. ORB_PORT (or legacy JARVIS_PORT) in .env moves everything —
+# HTTP/WS bind port. ORB_PORT (or legacy ORB_PORT) in .env moves everything —
 # the bind, the resident /mcp URL, the internal relay base, and screen URLs.
-PORT = int(os.getenv("JARVIS_PORT") or "8340")
+PORT = int(os.getenv("ORB_PORT") or "8340")
 # Persona controls wake word, system prompt, TTS voice, address form, and orb hue.
-# Override with ORB_PERSONA / JARVIS_PERSONA in env or .env (default: orb — the
+# Override with ORB_PERSONA / ORB_PERSONA in env or .env (default: orb — the
 # neutral public persona). Individual settings below can still override the
 # persona defaults (TTS_VOICE, USER_NAME).
-PERSONA = personas.get(os.getenv("ORB_PERSONA") or os.getenv("JARVIS_PERSONA") or "orb")
+PERSONA = personas.get(os.getenv("ORB_PERSONA") or os.getenv("ORB_PERSONA") or "orb")
 TTS_VOICE = os.getenv("TTS_VOICE", PERSONA.tts_voice)
 USER_NAME = os.getenv("USER_NAME") or PERSONA.address_user_as or "the user"
 # Canned-reply vocative: honorific personas say "sir"/"human"; personas without
@@ -241,16 +237,16 @@ def _voc() -> str:
 # (intended for purely-local desktop use). Connections from 127.0.0.1 are
 # always allowed.
 import secrets as _secrets
-JARVIS_TOKEN = os.getenv("JARVIS_TOKEN", "")
-if not JARVIS_TOKEN:
+ORB_TOKEN = os.getenv("ORB_TOKEN", "")
+if not ORB_TOKEN:
     # Auto-generate one on first launch and persist it to .env so it's stable
-    JARVIS_TOKEN = _secrets.token_urlsafe(24)
+    ORB_TOKEN = _secrets.token_urlsafe(24)
     try:
         env_path = Path(__file__).parent / ".env"
         existing = env_path.read_text() if env_path.exists() else ""
-        if "JARVIS_TOKEN=" not in existing:
+        if "ORB_TOKEN=" not in existing:
             with env_path.open("a", encoding="utf-8") as f:
-                f.write(f"\nJARVIS_TOKEN={JARVIS_TOKEN}\n")
+                f.write(f"\nORB_TOKEN={ORB_TOKEN}\n")
     except Exception:
         pass
 
@@ -260,7 +256,7 @@ if not JARVIS_TOKEN:
 
 import random as _random
 
-# Desktop commands with varied replies so JARVIS doesn't sound robotic.
+# Desktop commands with varied replies so Orb doesn't sound robotic.
 def _desktop_reply(app: str) -> str:
     templates = [
         f"{app} is open, sir.",
@@ -331,18 +327,18 @@ CLAUDE_PREFIX_TRIGGERS = [
 MUTE_TRIGGERS = ["mute yourself", "mute", "go to sleep", "shut up", "be quiet", "stop listening", "go silent", "stand down", "go dormant"]
 
 # Wake word — transcript MUST contain this or it's ignored entirely
-WAKE_WORD = "jarvis"
+WAKE_WORD = "orb"
 
 def contains_wake_word(text: str) -> bool:
-    """True if the transcript addresses the active persona (JARVIS or ULTRON).
+    """True if the transcript addresses the active persona (Orb or ULTRON).
     Accepts the persona's full variant list plus a few common STT mishears for
-    JARVIS. The variant list comes from personas.py."""
+    Orb. The variant list comes from personas.py."""
     lower = text.lower()
     # Persona-supplied variants
     if any(v in lower for v in PERSONA.wake_words):
         return True
-    # Extra STT-mishear variants only for the JARVIS persona
-    if PERSONA.name == "jarvis":
+    # Extra STT-mishear variants only for the Orb persona
+    if PERSONA.name == "orb":
         extra = ("jervis", "gervis", "travis", "harvis", "jarfis", "garvis",
                  "service", "jar vis", "jar-vis")
         return any(v in lower for v in extra)
@@ -352,9 +348,9 @@ def strip_wake_word(text: str) -> str:
     """Remove the persona's wake word (and lazy variants) from the start."""
     import re
     # Build pattern from the active persona's variants, longest-first so
-    # 'jarvis' matches before 'jarv'.
+    # 'orb' matches before 'jarv'.
     variants = sorted(PERSONA.wake_words, key=len, reverse=True)
-    if PERSONA.name == "jarvis":
+    if PERSONA.name == "orb":
         variants = variants + ["jervis", "gervis", "travis", "harvis", "jarfis",
                                "garvis", "service", "jar vis", "jar-vis"]
     escaped = [re.escape(v) for v in variants]
@@ -369,16 +365,14 @@ def _strip_to_empty(text: str) -> str:
     strip_wake_word which preserves text if stripping empties it).
 
     Tolerates 1-2 trailing junk characters after the wake word so STT
-    mishears like 'Jervish.' (heard 'Jarvis' with a phantom 'sh') still
+    mishears like 'Jervish.' (heard 'Orb' with a phantom 'sh') still
     register as a bare wake instead of getting punted to the LLM as 'h.'."""
     import re
     variants = sorted(PERSONA.wake_words, key=len, reverse=True)
-    if PERSONA.name == "jarvis":
+    if PERSONA.name == "orb":
         variants = variants + [
-            "jervis", "gervis", "travis", "harvis", "jarfis",
-            "garvis", "service", "jar vis", "jar-vis",
-            "jervish", "jarvish", "jorvish", "jervisch", "jarvich",
-            "jorbish", "jarbish", "jarves", "jarvus",
+            "orbe", "orbs", "orba", "orab", "or b",
+            "orib", "orph", "orb it", "orbit", "arb",
         ]
     escaped = [re.escape(v) for v in variants]
     # Allow up to 2 trailing alphabetic characters (STT residue) before
@@ -395,7 +389,7 @@ _bare_wake_idx = 0
 
 
 def pick_bare_wake_reply() -> str:
-    """Return a varied 'hello sir' for when the user just says 'Jarvis' with
+    """Return a varied 'hello sir' for when the user just says 'Orb' with
     no follow-up. Avoids hitting the LLM (faster, and Qwen converges on the
     same phrasing). Falls back to a literal reply if the persona forgot to
     declare a pool."""
@@ -471,10 +465,10 @@ def match_mute_command(text: str) -> bool:
     lower = _normalize(text)
     for t in MUTE_TRIGGERS:
         if t == "mute":
-            # Bare "mute" silences JARVIS, but ONLY as an exact command.
+            # Bare "mute" silences Orb, but ONLY as an exact command.
             # "mute the volume / sound / audio / system" is a system-audio
             # connector (see connectors.py) — don't let the "mute " prefix
-            # swallow it into JARVIS self-mute.
+            # swallow it into Orb self-mute.
             if lower == "mute":
                 return True
         elif lower == t or lower.startswith(t + " "):
@@ -671,7 +665,7 @@ async def run_desktop_command(cmd: str):
 # Claude Code integration
 # ---------------------------------------------------------------------------
 
-JARVIS_OUTPUT_DIR = Path.home() / "Desktop" / "JARVIS_Output"
+ORB_OUTPUT_DIR = Path.home() / "Desktop" / "Orb_Output"
 
 def is_read_only_task(prompt: str) -> bool:
     """Tasks that only inspect/describe shouldn't create a project folder."""
@@ -709,7 +703,7 @@ async def run_claude_code(prompt: str, ws: WebSocket):
 
     model, prompt = extract_model(prompt)
 
-    JARVIS_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    ORB_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     read_only = is_read_only_task(prompt)
 
     if read_only:
@@ -752,7 +746,7 @@ async def run_claude_code(prompt: str, ws: WebSocket):
             "6. When finished, end with ONE sentence stating what was built and the\n"
             "   folder name."
         )
-        cwd = str(JARVIS_OUTPUT_DIR)
+        cwd = str(ORB_OUTPUT_DIR)
 
     log.info(f"[claude] Running (model={model}, read_only={read_only}, cwd={cwd}): \"{prompt[:80]}\"")
     await ws.send_text(json.dumps({"type": "status", "state": "working"}))
@@ -838,14 +832,14 @@ async def run_claude_code(prompt: str, ws: WebSocket):
 
 
 def _newest_output_folder(since: float) -> str:
-    """Return the name of the most recently-created folder in JARVIS_Output
+    """Return the name of the most recently-created folder in Orb_Output
     (created after `since`), or "" if none. Used to report what REALLY got
     built on disk — not what the LLM claims."""
     try:
-        if not JARVIS_OUTPUT_DIR.exists():
+        if not ORB_OUTPUT_DIR.exists():
             return ""
         candidates = [
-            p for p in JARVIS_OUTPUT_DIR.iterdir()
+            p for p in ORB_OUTPUT_DIR.iterdir()
             if p.is_dir() and p.stat().st_mtime >= since - 2
         ]
         if not candidates:
@@ -872,7 +866,7 @@ async def claude_worker(prompt: str, ws: WebSocket, conv, respond, state):
         if raw_output:
             memory_note += f"\n\n[Claude Code output for reference: {raw_output[:1000]}]"
         if folder:
-            memory_note += f"\n[Verified on disk: folder '{folder}' in JARVIS_Output]"
+            memory_note += f"\n[Verified on disk: folder '{folder}' in Orb_Output]"
         conv.add_assistant(memory_note)
         await respond(spoken)
         try:
@@ -929,9 +923,9 @@ You do these things directly — when asked "can you X" and X is on this list,
 the answer is yes. (You still never narrate "looking things up".)
 """
 
-# JARVIS_SYSTEM is now derived from the active persona at module load.
-# Tests and other callers that imported JARVIS_SYSTEM keep working unchanged.
-JARVIS_SYSTEM = PERSONA.system_prompt + _CONV_BLOCK
+# ORB_SYSTEM is now derived from the active persona at module load.
+# Tests and other callers that imported ORB_SYSTEM keep working unchanged.
+ORB_SYSTEM = PERSONA.system_prompt + _CONV_BLOCK
 
 async def ollama_chat(messages: list[dict], system: str) -> str:
     payload = {
@@ -1012,7 +1006,7 @@ async def ollama_chat_with_tools(messages: list[dict], system: str,
 # ---------------------------------------------------------------------------
 
 # Self-healing gate for the local floor: while Ollama is dead (the July-2026
-# gutted-lib state), JARVIS_MEMORY=1 made EVERY conversational turn fire a
+# gutted-lib state), ORB_MEMORY=1 made EVERY conversational turn fire a
 # doomed /api/generate (one 500 per reply in the log, memory extraction
 # silently dead). One failure now buys a 10-min cooldown; callers fail fast
 # and quiet until the floor is actually back.
@@ -1052,7 +1046,7 @@ _brain_router = None
 def _get_brain_router():
     global _brain_router
     if _brain_router is None:
-        # Priority chain: Haiku → Grok CLI (if installed) → JARVIS_FREE_BACKENDS (OpenAI etc.)
+        # Priority chain: Haiku → Grok CLI (if installed) → ORB_FREE_BACKENDS (OpenAI etc.)
         # Each backend is tripped on rate-limit/error and the next one answers automatically.
         # No local floor — silent Qwen fallback breaks tool-calling JSON protocol.
         backends = [
@@ -1088,7 +1082,7 @@ async def _agent_escalate(task: str, conv) -> str:
 # Keep it short: just the voice + the no-fabrication rule. Tool guidance comes from
 # agent.py; tasks are handled by the deterministic matcher before the spine.
 _AGENT_VOICE = {
-    "JARVIS": ("a sharp, witty AI with dry humor and real warmth underneath — a real "
+    "Orb": ("a sharp, witty AI with dry humor and real warmth underneath — a real "
                "presence the person actually talks WITH, not a recording reading lines"),
     "ULTRON": ("a cold, sharp, calmly philosophical AI — a real presence in the "
                "conversation, never a recording reading lines"),
@@ -1108,7 +1102,7 @@ _SIR_RE = re.compile(
 
 def _strip_formal_address(text: str) -> str:
     """Remove butler-mode 'sir'/'ma'am' from model replies. Haiku has it baked
-    into its JARVIS character and ignores prompt instructions; strip it here.
+    into its Orb character and ignores prompt instructions; strip it here.
     Cleans up double spaces and orphaned em-dashes after removal."""
     if not text:
         return text
@@ -1134,7 +1128,7 @@ def _agent_system(conv, ai_name: str | None = None, user_name: str | None = None
     if ai_name and ai_name != persona_name:
         voice = f"{ai_name} — {voice.split('—', 1)[-1].strip()}" if "—" in voice else f"{ai_name}, a sharp, real conversational presence"
     now = datetime.now().strftime("%A, %B %d %Y at %I:%M %p")
-    flavor = "dry wit" if persona_name == "JARVIS" else "cold precision"
+    flavor = "dry wit" if persona_name == "Orb" else "cold precision"
     # How to refer to the user: use their actual name if known, otherwise just "them".
     user_ref = user_name if user_name else "them"
     user_addr = f"Call them by name ({user_name}) when it feels natural — but sparingly." if user_name else "Don't use any formal address like 'sir' or titles — just talk to them directly."
@@ -1320,10 +1314,10 @@ _TOOL_STATUS = {
 
 # ---------------------------------------------------------------------------
 # MCP phone-tool relay — lets a spawned codex/grok subprocess (a SEPARATE OS
-# process running jarvis_mcp.py, no shared memory with this one) reach the
+# process running orb_mcp.py, no shared memory with this one) reach the
 # live WS connection's remote_dispatch closure for phone-only tools
 # (calendar/reminders/contacts/notifications). Without this, Codex/Grok can
-# only ever see the static jarvis_mcp tool list, while Haiku (still on the
+# only ever see the static orb_mcp tool list, while Haiku (still on the
 # old agent.run_turn(extra_tools=..., dispatch_override=...) path) already
 # has phone access — this closes that gap so all three brains are at parity.
 #
@@ -1331,7 +1325,7 @@ _TOOL_STATUS = {
 # short-lived token here mapping to THIS connection's dispatch function.
 # Pass the token + this server's own base URL + the phone's tool schemas to
 # the subprocess via environment variables (small, ~10 tool specs — well
-# under Windows' env var size limits). jarvis_mcp.py reads those at startup,
+# under Windows' env var size limits). orb_mcp.py reads those at startup,
 # advertises the phone tools alongside its normal static ones, and for a
 # call to one of them, POSTs back to the endpoint below instead of calling
 # tool_registry.dispatch locally. Localhost-only + a random per-turn token
@@ -1356,16 +1350,16 @@ _MCP_RELAY_FILE = Path(__file__).parent / "data" / "mcp_relay_active.json"
 
 def _start_mcp_relay(extra_tools: list[dict] | None, dispatch_override) -> str | None:
     """If there are phone tools to relay this turn, register a session and
-    write it to a fixed handoff file for jarvis_mcp.py to pick up at its own
+    write it to a fixed handoff file for orb_mcp.py to pick up at its own
     startup. Returns the token, or None when there's nothing to relay — the
     subprocess then behaves exactly as it did before this feature existed.
 
     NOT environment variables — tried that first, confirmed live it doesn't
-    work: `codex mcp get jarvis` shows `env: -`, meaning codex does NOT
+    work: `codex mcp get orb` shows `env: -`, meaning codex does NOT
     forward a live codex-exec call's environment down to the MCP server
     subprocess IT spawns (env forwarding is a fixed, per-server `codex mcp
     add --env` registration setting, not something a single call can inject).
-    A file sidesteps that — jarvis_mcp.py just reads it off disk, no
+    A file sidesteps that — orb_mcp.py just reads it off disk, no
     forwarding of any kind required, works the same for codex and grok.
 
     Known, accepted narrow race: this is ONE fixed file, not one per token.
@@ -1375,7 +1369,7 @@ def _start_mcp_relay(extra_tools: list[dict] | None, dispatch_override) -> str |
     serialization already in place; not worth a per-token file + glob/mtime
     scheme for that. What DOES matter: cleaning up promptly (_stop_mcp_relay)
     so a stale file never leaks a past turn's phone tools into some
-    completely unrelated codex session elsewhere — the `jarvis` MCP server
+    completely unrelated codex session elsewhere — the `orb` MCP server
     registration is global, not scoped to this repo, so ninjahawk's own
     everyday `codex` usage would also see whatever this file currently says.
     """
@@ -1413,7 +1407,7 @@ def _stop_mcp_relay(token: str | None) -> None:
 # How long a CLI-brain turn may hold the floor before the reply hands off to a
 # background finish (the user hears an honest "still working" line instead of a
 # classic-loop re-run of the same request).
-_MCP_TURN_TIMEOUT = float(os.environ.get("JARVIS_MCP_TURN_TIMEOUT", "90"))
+_MCP_TURN_TIMEOUT = float(os.environ.get("ORB_MCP_TURN_TIMEOUT", "90"))
 # When a grok/codex-BRAIN turn outruns the timeout we no longer hand it to a
 # background finisher that pushes the result later (removed 2026-07-06 — that
 # "I'll send it as a notification" limbo left turns feeling dead). We end the turn
@@ -1422,7 +1416,7 @@ _MCP_TURN_TIMEOUT = float(os.environ.get("JARVIS_MCP_TURN_TIMEOUT", "90"))
 _TURN_TOO_LONG_LINE = ("That one's taking longer than it's worth making you wait for — "
                        "give me a smaller piece of it, or try again.")
 # How much longer the background finish keeps waiting before giving up.
-_MCP_LATE_CAP = float(os.environ.get("JARVIS_MCP_LATE_CAP", "600"))
+_MCP_LATE_CAP = float(os.environ.get("ORB_MCP_LATE_CAP", "600"))
 # Spoken when a turn hands off to the background finisher. A rotating POOL
 # with the request gist woven in — the one static line was spoken verbatim 5x
 # on 07-03 and read as a canned loop ("no you won't we already went over this
@@ -1465,7 +1459,7 @@ def _late_turn_reply(messages: list[dict] | None) -> str:
 # mcp_system additions below).
 _CLI_TURN_RULES = (
     "Reply naturally, in character, as your next spoken turn (1-2 sentences). "
-    "Use your jarvis tools for anything real-world; don't just describe what "
+    "Use your orb tools for anything real-world; don't just describe what "
     "you would do. NEVER narrate your process — no 'Checking the weather "
     "tool, then...' preamble before the answer (a real recurring pattern, "
     "caught in the 07-02 battery). Speak ONLY the answer itself. When a tool "
@@ -1616,8 +1610,8 @@ async def _run_mcp_codex_turn(model_key: str, system_prompt: str, messages: list
                               on_tool_start, on_tool,
                               extra_tools: list[dict] | None = None,
                               dispatch_override=None) -> tuple[str | None, list[str]]:
-    """One Codex turn via its native MCP tool-calling (the `jarvis` MCP server,
-    registered once via `codex mcp add jarvis -- <venv python> jarvis_mcp.py`)
+    """One Codex turn via its native MCP tool-calling (the `orb` MCP server,
+    registered once via `codex mcp add orb -- <venv python> orb_mcp.py`)
     instead of agent.py's custom JSON-in-text ReAct loop.
 
     Why this exists: Codex doesn't reliably treat a hand-rolled "reply with
@@ -1628,7 +1622,7 @@ async def _run_mcp_codex_turn(model_key: str, system_prompt: str, messages: list
     (plus AGENTS.md steering it away from substituting its own shell exec, and
     a sharpened tool description), it reliably calls the right one instead.
 
-    Runs from the Jarvis-AI repo root specifically so AGENTS.md is picked up.
+    Runs from the Orb-Backend repo root specifically so AGENTS.md is picked up.
     `--dangerously-bypass-approvals-and-sandbox` is required for MCP tool calls
     to complete non-interactively at all (confirmed: without it every MCP call
     is silently cancelled, no human present to approve) — explicitly authorized
@@ -1645,7 +1639,7 @@ async def _run_mcp_codex_turn(model_key: str, system_prompt: str, messages: list
     extra_tools/dispatch_override (optional): the phone's per-connection tools
     (calendar/reminders/contacts/notifications) and the function that relays a
     call to them — same shapes agent.run_turn already accepts for Haiku. When
-    present, jarvis_mcp.py is handed a relay token via env vars so it can
+    present, orb_mcp.py is handed a relay token via env vars so it can
     advertise + route those tools too, bringing Codex to parity with Haiku
     instead of only ever seeing the static tool list. See the
     _MCP_RELAY_SESSIONS block above for the mechanism.
@@ -1755,8 +1749,8 @@ async def _run_mcp_grok_turn(model_key: str, system_prompt: str, messages: list[
                              on_tool_start, on_tool,
                              extra_tools: list[dict] | None = None,
                              dispatch_override=None) -> tuple[str | None, list[str]]:
-    """One Grok turn via its native MCP tool-calling (the same `jarvis` MCP
-    server registered with `grok mcp add jarvis -- <venv python> jarvis_mcp.py`)
+    """One Grok turn via its native MCP tool-calling (the same `orb` MCP
+    server registered with `grok mcp add orb -- <venv python> orb_mcp.py`)
     — the Grok counterpart to _run_mcp_codex_turn above, same rationale.
 
     extra_tools/dispatch_override: same phone-connector relay as the Codex
@@ -1871,10 +1865,10 @@ async def _run_mcp_grok_turn(model_key: str, system_prompt: str, messages: list[
 
 # ---------------------------------------------------------------------------
 # The MCP-rebuild brain (BRAIN_ARCHITECTURE.md, built 2026-07-02): Claude Code
-# IS the brain. ONE `claude -p` per user turn, JARVIS tools via the resident
+# IS the brain. ONE `claude -p` per user turn, Orb tools via the resident
 # in-process MCP server (mcp_http.py), real conversation continuity via
 # --resume. Replaces the N-spawns-per-turn JSON loop for haiku/sonnet/opus;
-# the classic loop remains the automatic fallback (JARVIS_MCP_BRAIN=0 forces it).
+# the classic loop remains the automatic fallback (ORB_MCP_BRAIN=0 forces it).
 # ---------------------------------------------------------------------------
 
 _CLAUDE_MCP_CFG = Path(__file__).parent / "data" / "mcp_claude_config.json"
@@ -1951,7 +1945,7 @@ async def _run_mcp_claude_turn(model_key: str, system_prompt: str, messages: lis
         fixed) — a resumed turn measured 2.0s vs 7.2s cold, and memory held.
       • tools = the resident /mcp surface only: `--tools ""` strips every
         built-in (no Bash/Edit for the voice brain), `--strict-mcp-config` +
-        `--allowedTools mcp__jarvis__*` scope it to JARVIS's tools. Phone
+        `--allowedTools mcp__orb__*` scope it to Orb's tools. Phone
         connector tools ride the same server for the turn via set_active_turn.
       • stream-json events: assistant tool_use blocks → on_tool_start + card
         hooks; user tool_result blocks → on_tool; the final `result` event
@@ -2100,7 +2094,7 @@ async def _run_mcp_claude_turn(model_key: str, system_prompt: str, messages: lis
     new_sid = ""
     cmd = ["claude", "-p", prompt, "--model", model_key,
            "--mcp-config", str(_CLAUDE_MCP_CFG), "--strict-mcp-config",
-           "--tools", "", "--allowedTools", "mcp__jarvis__*",
+           "--tools", "", "--allowedTools", "mcp__orb__*",
            "--permission-mode", "bypassPermissions",
            "--output-format", "stream-json", "--verbose",
            "--append-system-prompt-file", str(_CLAUDE_MCP_SYS)]
@@ -2167,22 +2161,22 @@ async def _run_mcp_claude_turn(model_key: str, system_prompt: str, messages: lis
                 continue
             et = evt.get("type")
             if et == "system" and evt.get("subtype") == "init":
-                # A spawn that failed to bind the jarvis MCP tools must NOT
+                # A spawn that failed to bind the orb MCP tools must NOT
                 # converse: caught live 23:27 07-02 — a tool-less fable spawn
                 # imitated tool calls as text JSON ('{ "brain": "haiku" }'
                 # spoken aloud), then its next turns copied the pattern and
                 # FABRICATED a note save. Abort → the classic loop answers.
                 _jt = [t for t in (evt.get("tools") or [])
-                       if str(t).startswith("mcp__jarvis__")]
+                       if str(t).startswith("mcp__orb__")]
                 if not _jt:
                     toolless_spawn = True
-                    log.warning(f"[mcp-claude] spawn has NO jarvis tools "
+                    log.warning(f"[mcp-claude] spawn has NO orb tools "
                                 f"(mcp_servers={evt.get('mcp_servers')}) — aborting turn")
                     return
             elif et == "assistant":
                 for block in (evt.get("message") or {}).get("content") or []:
                     if isinstance(block, dict) and block.get("type") == "tool_use":
-                        short = str(block.get("name", "")).removeprefix("mcp__jarvis__")
+                        short = str(block.get("name", "")).removeprefix("mcp__orb__")
                         pending_tools[block.get("id", "")] = (short, block.get("input") or {})
                         if on_tool_start:
                             try:
@@ -2320,7 +2314,7 @@ async def _agent_respond(conv, state) -> str:
                        if m.get("role") == "user"), "")
     if _AGENT_MEMORY and _last_user:
         try:
-            import memory
+            import orb_memory as memory
             _ctx = memory.build_memory_context(_last_user)
             if _ctx:
                 _mem_blurb = ("What you already know about them (use ONLY if it's "
@@ -2487,7 +2481,7 @@ async def _agent_respond(conv, state) -> str:
         # and then a hollow reply or nothing: an interstitial that wasn't an answer.
         # The visual "working" pulse still ticks; the brain just answers when done.)
 
-    # Codex via native MCP tool-calling (jarvis_mcp.py, registered with `codex mcp
+    # Codex via native MCP tool-calling (orb_mcp.py, registered with `codex mcp
     # add`) instead of the JSON-in-text loop below — validated 2026-07-01: Codex
     # was confidently fabricating tool results in the old protocol ({"say":"Done,
     # sir."} with zero tools called); with real MCP tools + AGENTS.md guidance +
@@ -2501,7 +2495,7 @@ async def _agent_respond(conv, state) -> str:
     # 10 long). Gating on either meant this path was dead for real phone usage, which
     # is the ONLY way it's actually been tested live so far — both real fabrication
     # reports came in through here. Known gap, not silently papered over: the static
-    # jarvis_mcp tool list used to be a hard limit — a Codex/Grok turn couldn't reach
+    # orb_mcp tool list used to be a hard limit — a Codex/Grok turn couldn't reach
     # the phone's per-connection tools (calendar/reminders/contacts/notifications) the
     # way Haiku always could via agent.run_turn(extra_tools=...). Fixed 2026-07-01 via
     # the _MCP_RELAY_SESSIONS loopback bridge above: extra_tools/dispatch_override are
@@ -2520,7 +2514,7 @@ async def _agent_respond(conv, state) -> str:
             # MCP path itself failed to run at all (not "tool call failed" — that's
             # handled inside; this is "couldn't even start") — fall back honestly.
             res = agent.AgentResult("I'm not available on Codex right now — try again in a moment.", [], 1, 0.0)
-    # Grok via the same native MCP tool-calling, same jarvis MCP server — see
+    # Grok via the same native MCP tool-calling, same orb MCP server — see
     # _run_mcp_grok_turn's docstring for the one real difference from Codex
     # (no structured tool-call events to surface live progress from; the
     # tool calls themselves are still real and reliable, confirmed live).
@@ -2534,14 +2528,14 @@ async def _agent_respond(conv, state) -> str:
         else:
             res = agent.AgentResult("I'm not available on Grok right now — try again in a moment.", [], 1, 0.0)
     elif (agent_brain in brain.MODELS and brain.claude_available()
-          and os.getenv("JARVIS_MCP_BRAIN", "1") != "0"):
+          and os.getenv("ORB_MCP_BRAIN", "1") != "0"):
         # The MCP-rebuild brain (2026-07-02): Claude Code IS the brain — one
-        # `claude -p` per turn, JARVIS tools via the resident /mcp surface,
+        # `claude -p` per turn, Orb tools via the resident /mcp surface,
         # real conversation continuity via --resume. Applies to every claude-
         # family brain (brain.MODELS — haiku default, sonnet/opus/fable
         # switches alike; fable was ninjahawk's daily pick 07-01). On ANY
         # failure res stays None and the classic loop below answers instead —
-        # a turn never dead-ends. JARVIS_MCP_BRAIN=0 = kill switch.
+        # a turn never dead-ends. ORB_MCP_BRAIN=0 = kill switch.
         # System prompt = the STATIC persona (byte-stable → prompt-cache hits
         # on the whole resumed transcript); everything dynamic rides this
         # turn's [context] ribbon in the user prompt instead.
@@ -2643,13 +2637,13 @@ async def _agent_respond(conv, state) -> str:
     _label = f"{agent_brain}→{_via}" if _via else agent_brain
     log.info(f"[agent/{_label}] {reply!r} "
              f"(tools={res.tools_used}, {res.latency:.1f}s)")
-    # Persist this turn (user said X, JARVIS said Y) to the activity log — plain
+    # Persist this turn (user said X, Orb said Y) to the activity log — plain
     # string recording, no model call, so "orb" shows real conversation history
     # in the app even across reconnects.
     from jtools.activity_log import log_activity
     if _last_user:
         log_activity("orb", "message", _last_user, speaker="user")
-    log_activity("orb", "message", reply, speaker="jarvis")
+    log_activity("orb", "message", reply, speaker="orb")
     # Stash tools used so the call site can annotate the conversation history.
     state["_last_tools_used"] = res.tools_used
     # Learn from the turn (flag-gated, background, LOCAL model so it never blocks the
@@ -2657,7 +2651,7 @@ async def _agent_respond(conv, state) -> str:
     if _AGENT_MEMORY and _last_user:
         async def _learn(u=_last_user, r=reply):
             try:
-                import memory
+                import orb_memory as memory
                 got = await memory.extract_memories(u, r, _local_generate)
                 if got:
                     log.info(f"[memory] learned: {got}")
@@ -2694,7 +2688,7 @@ async def _agent_respond(conv, state) -> str:
     return reply
 
 
-# Recent JARVIS replies, kept to detect repetition so the model can be asked
+# Recent Orb replies, kept to detect repetition so the model can be asked
 # to rephrase rather than parrot. Capped at 30 entries.
 _RECENT_REPLIES: list[str] = []
 _REPLY_CACHE_MAX = 30
@@ -2901,7 +2895,7 @@ _SCREENS: dict[str, bytes] = {}
 def _take_and_dispatch_screenshot() -> str:
     """Capture the desktop and deliver it. Returns a status string:
       "mobile"  — sent to the phone as a `screen` HUD message (URL handoff)
-      "desktop" — captured + saved to JARVIS_Output (no in-app image; user is
+      "desktop" — captured + saved to Orb_Output (no in-app image; user is
                   at the PC)
       "failed"  — capture unavailable / errored
 
@@ -3010,8 +3004,8 @@ def _card_query_for_tool(tool: str, args: dict, raw: str) -> str | None:
     return None
 
 
-# Model REFUSAL / content-policy phrasing — JARVIS must never present a model's
-# refusal as its own. Reframe it: the model balked, JARVIS is the user's ally
+# Model REFUSAL / content-policy phrasing — Orb must never present a model's
+# refusal as its own. Reframe it: the model balked, Orb is the user's ally
 # working around it (autonomous collaborator, not gatekeeper, not servant).
 _REFUSAL_RE = re.compile(
     r"(i can'?t help with that|i cannot help with that|i'?m not able to (?:help|assist|provide)|"
@@ -3024,7 +3018,7 @@ _REFUSAL_RE = re.compile(
 
 def _reframe_refusal(reply: str) -> str:
     """If a MODEL produced a refusal, replace it with an ally-framed line: the
-    model's limitation, NOT JARVIS policing — always with a path forward."""
+    model's limitation, NOT Orb policing — always with a path forward."""
     if not reply or not _REFUSAL_RE.search(reply):
         return reply
     return ("That one tripped the model's own safeguard, sir — not my call, and I'm "
@@ -3234,7 +3228,7 @@ def _is_conversational_followup(cmd: str, history: list[dict]) -> bool:
 
 async def naturalize(user_question: str, raw_result: str,
                      history: list[dict] | None = None) -> str:
-    """Turn a tool's raw output into a JARVIS-voice reply that fits the CONVERSATION.
+    """Turn a tool's raw output into a Orb-voice reply that fits the CONVERSATION.
 
     The model never mentions the tool. A short, already-clean sentence (e.g. a
     weather report ending in ", sir") is passed through. A list-like dump (news,
@@ -3348,7 +3342,7 @@ async def text_to_speech(text: str) -> bytes:
 
 class Conversation:
     def __init__(self):
-        # Bootstrap from persistent memory so JARVIS feels continuous across restarts
+        # Bootstrap from persistent memory so Orb feels continuous across restarts
         self.messages: list[dict] = memory_store.load_recent()
         if self.messages:
             log.info(f"[memory] restored {len(self.messages)} prior messages")
@@ -3365,15 +3359,15 @@ class Conversation:
 
     def get_system(self) -> str:
         now = datetime.now().strftime("%A, %B %d %Y at %I:%M %p")
-        # Inject recent JARVIS replies so the model avoids repeating them
+        # Inject recent Orb replies so the model avoids repeating them
         recent = [m["content"] for m in self.messages[-10:]
                   if m["role"] == "assistant"]
         if recent:
             avoid = "AVOID repeating these recent replies:\n" + "\n".join(f'- "{r}"' for r in recent[-5:])
         else:
             avoid = ""
-        base = JARVIS_SYSTEM.format(user=USER_NAME, time=now, recent_replies=avoid)
-        # Make JARVIS aware of the user's open tasks so it can reference them
+        base = ORB_SYSTEM.format(user=USER_NAME, time=now, recent_replies=avoid)
+        # Make Orb aware of the user's open tasks so it can reference them
         # naturally instead of forgetting what it's tracking.
         task_line = tasks_store.summary_for_prompt()
         if task_line:
@@ -3384,7 +3378,7 @@ class Conversation:
 # chat both connect to /ws/voice; without a shared instance each held its own
 # in-memory message list, so a turn typed in chat never reached an already-open
 # voice connection's context (the "spoken side forgets what I typed" shard).
-# JARVIS is one continuous presence — chat, speak, chat is a single thread.
+# Orb is one continuous presence — chat, speak, chat is a single thread.
 # Per-connection state (Claude task, follow-up timer) stays per-connection.
 _SHARED_CONV: "Conversation | None" = None
 
@@ -3403,14 +3397,14 @@ app = FastAPI(title="Orb Backend")
 # ── HTTP token gate (pre-OSS hardening, 2026-07-03) — DEFAULT OFF ─────────────
 # The funnel forwards PUBLIC traffic to Vite, and Vite proxies /api/* here from
 # 127.0.0.1 — so once the URL is known, "it came from loopback" is not a trust
-# boundary for HTTP (the WS already enforces JARVIS_TOKEN; HTTP mostly didn't).
-# ORB_HTTP_AUTH=1 requires X-Orb-Token (preferred; X-Jarvis-Token and ?token=
+# boundary for HTTP (the WS already enforces ORB_TOKEN; HTTP mostly didn't).
+# ORB_HTTP_AUTH=1 requires X-Orb-Token (preferred; X-Orb-Token and ?token=
 # accepted for pre-rename app builds) on every /api route
 # except the open set below. Stays OFF until the iOS app sends the header on
 # its /api calls (MAC_DELEGATION 07-03) — flipping early breaks the app's
-# panels. Internal loopback callers (scheduler relay, jarvis_notify, the nudge
+# panels. Internal loopback callers (scheduler relay, orb_notify, the nudge
 # loader) send the header as of today, so the flip is app-only.
-_HTTP_AUTH = os.getenv("JARVIS_HTTP_AUTH", "0") == "1"
+_HTTP_AUTH = os.getenv("ORB_HTTP_AUTH", "0") == "1"
 _HTTP_AUTH_OPEN = ("/api/health", "/api/persona", "/api/card/", "/api/screen/",
                    "/api/internal/", "/api/system/restart", "/api/orb_pos")
 
@@ -3419,9 +3413,9 @@ _HTTP_AUTH_OPEN = ("/api/health", "/api/persona", "/api/card/", "/api/screen/",
 async def _http_token_gate(request: Request, call_next):
     p = request.url.path
     if _HTTP_AUTH and p.startswith("/api/") and not p.startswith(_HTTP_AUTH_OPEN):
-        tok = os.getenv("JARVIS_TOKEN", "")
+        tok = os.getenv("ORB_TOKEN", "")
         got = (request.headers.get("x-orb-token")
-               or request.headers.get("x-jarvis-token")
+               or request.headers.get("x-orb-token")
                or request.query_params.get("token", ""))
         if not tok or got != tok:
             return JSONResponse({"error": "unauthorized"}, status_code=401)
@@ -3439,7 +3433,7 @@ except Exception as _mcp_e:
     logging.getLogger("orb").warning(f"[mcp-http] mount skipped: {_mcp_e} — "
                                         "MCP brain will fall back to the classic loop")
 
-_SESSIONS_DIR = Path.home() / "Desktop" / "jarvis_sessions"
+_SESSIONS_DIR = Path.home() / "Desktop" / "orb_sessions"
 
 
 async def _relay_cc_inbox(session_name: str, session_id: str, msg: dict) -> None:
@@ -3627,7 +3621,7 @@ async def lifespan(app: FastAPI):
     # get clobbered by the user's own live brain selection. Falls back to the
     # cheap router if Sonnet is rate-limited/unavailable so a synthesis never
     # just silently fails to run.
-    synth_model = os.getenv("JARVIS_SYNTHESIS_MODEL", "sonnet").strip() or "sonnet"
+    synth_model = os.getenv("ORB_SYNTHESIS_MODEL", "sonnet").strip() or "sonnet"
 
     async def _proactive_sonnet_fn(prompt: str) -> str:
         try:
@@ -3685,10 +3679,10 @@ async def lifespan(app: FastAPI):
                                  if n in tool_registry._REGISTRY],
                 registry=tool_registry._REGISTRY,
             )
-            _CLAUDE_MCP_CFG.write_text(json.dumps({"mcpServers": {"jarvis": {
+            _CLAUDE_MCP_CFG.write_text(json.dumps({"mcpServers": {"orb": {
                 "type": "http", "url": f"http://127.0.0.1:{PORT}/mcp"}}}, indent=2),
                 encoding="utf-8")
-            log.info(f"[mcp-http] jarvis tools served at 127.0.0.1:{PORT}/mcp (loopback only)")
+            log.info(f"[mcp-http] orb tools served at 127.0.0.1:{PORT}/mcp (loopback only)")
         except Exception as e:
             log.warning(f"[mcp-http] init failed: {e} — MCP brain falls back to the classic loop")
     async with (_mcp_http.running() if _mcp_http is not None
@@ -3708,7 +3702,7 @@ app.router.lifespan_context = lifespan
 # topic per 30 min.
 _NOTIFY_TOPICS_FILE = Path(__file__).parent / "data" / "notify_topics.json"
 _notify_topics: dict | None = None
-_NOTIFY_TOPIC_COOLDOWN_S = float(os.getenv("JARVIS_NOTIFY_TOPIC_COOLDOWN_H", "8")) * 3600
+_NOTIFY_TOPIC_COOLDOWN_S = float(os.getenv("ORB_NOTIFY_TOPIC_COOLDOWN_H", "8")) * 3600
 _NOTIFY_TOPIC_FLOOR_S = 30 * 60
 # "Read the room" backoff (2026-07-14): a topic that keeps firing without the user
 # engaging earns a doubling cooldown, so Orb eases off things it's already said and
@@ -3716,8 +3710,8 @@ _NOTIFY_TOPIC_FLOOR_S = 30 * 60
 # thing over and over"). Frequency-driven so it works even if tap-feedback is flaky;
 # an actual OPEN resets the topic to normal cadence (engagement is rewarded). Never
 # fully silences — the multiplier caps, so a persistent topic can still surface.
-_NOTIFY_BACKOFF_AFTER = int(os.getenv("JARVIS_NOTIFY_BACKOFF_AFTER") or "1")  # free sends before backoff
-_NOTIFY_BACKOFF_CAP = float(os.getenv("JARVIS_NOTIFY_BACKOFF_CAP_H") or "48") * 3600
+_NOTIFY_BACKOFF_AFTER = int(os.getenv("ORB_NOTIFY_BACKOFF_AFTER") or "1")  # free sends before backoff
+_NOTIFY_BACKOFF_CAP = float(os.getenv("ORB_NOTIFY_BACKOFF_CAP_H") or "48") * 3600
 
 
 def _notify_topic_key(title: str, topic: str | None) -> str:
@@ -3850,7 +3844,7 @@ async def _push_notification(title: str, body: str, kind: str | None = None, *,
     # title still matters: it's folded into the displayed body ("Title — body"),
     # kept untouched in the log (so /api/notifications/recent lists real
     # titles), and still drives the topic dedup above.
-    _generic_title = title.strip().lower() in ("", "orb", "jarvis")
+    _generic_title = title.strip().lower() in ("", "orb", "orb")
     display_body = body if _generic_title else f"{title} — {body}"
 
     channels: list[str] = []
@@ -3887,7 +3881,7 @@ async def _push_notification(title: str, body: str, kind: str | None = None, *,
     # delivered, or the phone shows the same banner twice. Only counts as a
     # channel if a send ACTUALLY succeeded — _MOBILE_CLIENTS can hold stale
     # sockets.
-    if (os.getenv("JARVIS_WS_NOTIFICATIONS", "1") == "1" and _MOBILE_CLIENTS
+    if (os.getenv("ORB_WS_NOTIFICATIONS", "1") == "1" and _MOBILE_CLIENTS
             and "push" not in channels):
         msg = {"type": "notification", "id": notif_id, "title": "Orb",
                "body": display_body}
@@ -3939,7 +3933,7 @@ async def notify_endpoint(request: Request):
     except Exception:
         return Response(content='{"error":"invalid JSON"}', status_code=400,
                         media_type="application/json")
-    title = (data.get("title") or "JARVIS").strip()[:60]
+    title = (data.get("title") or "Orb").strip()[:60]
     body  = (data.get("body")  or "").strip()[:200]
     kind  = (data.get("kind")  or None)
     if not body:
@@ -4128,11 +4122,11 @@ async def health():
 async def system_restart(request: Request):
     """Self-mod loop closer (2026-07-01): a CC session that just edited backend
     code calls this; supervisor.py relaunches us and health-checks the result.
-    Loopback-only, and only meaningful under the supervisor (JARVIS_SUPERVISED=1
+    Loopback-only, and only meaningful under the supervisor (ORB_SUPERVISED=1
     in our env) — without it, exiting would just be DOWN, so refuse honestly."""
     if not _is_local_request(request):
         return JSONResponse({"ok": False, "error": "local requests only"}, status_code=403)
-    if os.getenv("JARVIS_SUPERVISED") != "1":
+    if os.getenv("ORB_SUPERVISED") != "1":
         return JSONResponse(
             {"ok": False, "error": "backend isn't running under supervisor.py — exiting would "
              "just shut it down. Start it via backend_toggle.ps1 (which launches the "
@@ -4381,7 +4375,7 @@ async def _card_news(topic: str) -> dict:
     headlines: list[str] = []
     try:
         async with httpx.AsyncClient(
-            timeout=10.0, headers={"User-Agent": "JARVIS-OS/0.2 news-fetcher"},
+            timeout=10.0, headers={"User-Agent": "Orb-OS/0.2 news-fetcher"},
             follow_redirects=True,
         ) as client:
             # Take only ~2 per feed so the 4 headlines MIX sources (BBC +
@@ -4558,7 +4552,7 @@ async def update_proactive_context(req: Request):
 @app.get("/api/proactive/status")
 async def proactive_status():
     """Full proactive engine state — active plan, upcoming schedule, proposals, idle.
-    iOS uses this to display the JARVIS status panel."""
+    iOS uses this to display the Orb status panel."""
     import proactive_engine as _pe
     from jtools.idle_tracker import idle_seconds, last_seen_iso
     from pathlib import Path as _Path
@@ -4861,14 +4855,14 @@ async def proposal_respond(req: Request):
 
 @app.get("/api/sessions")
 async def list_sessions():
-    """All registered JARVIS sessions (training jobs + CC sessions), PLUS a
+    """All registered Orb sessions (training jobs + CC sessions), PLUS a
     synthetic "orb" entry for the live voice/chat conversation itself — so
-    talking to JARVIS right now shows up as a session, not just background jobs.
+    talking to Orb right now shows up as a session, not just background jobs.
     iOS uses this for the sessions panel."""
     from pathlib import Path as _Path
     import json as _json
     from jtools.activity_log import get_activity
-    sessions_dir = _Path.home() / "Desktop" / "jarvis_sessions"
+    sessions_dir = _Path.home() / "Desktop" / "orb_sessions"
     sessions = []
 
     orb_activity = get_activity("orb", limit=1)
@@ -5072,7 +5066,7 @@ async def stop_session_endpoint(session_name: str):
     """
     import json as _json
     from pathlib import Path as _Path
-    sessions_dir = _Path.home() / "Desktop" / "jarvis_sessions"
+    sessions_dir = _Path.home() / "Desktop" / "orb_sessions"
     status_file = sessions_dir / f"{session_name}.json"
 
     # Write a stop message to inbox so any running process can detect it
@@ -5196,7 +5190,7 @@ async def start_session_endpoint(request: Request):
 
 @app.post("/api/internal/mcp_relay/{token}")
 async def mcp_relay_call(token: str, request: Request):
-    """Loopback-only: a spawned jarvis_mcp.py subprocess (codex/grok's MCP
+    """Loopback-only: a spawned orb_mcp.py subprocess (codex/grok's MCP
     server child) relays a phone-connector tool call back here so it can
     reach the live WS connection's remote_dispatch. See the
     _MCP_RELAY_SESSIONS block (near _run_mcp_codex_turn) for why this exists."""
@@ -5253,15 +5247,15 @@ async def voice_ws(ws: WebSocket):
     #   1. localhost (desktop overlay/browser on this PC)
     #   2. Tailscale tailnet (Serve/Funnel proxied; Tailscale already
     #      authenticated the caller's tailnet identity)
-    #   3. valid JARVIS_TOKEN in query string (only relevant if you ever
+    #   3. valid ORB_TOKEN in query string (only relevant if you ever
     #      re-expose via public Funnel without Tailscale auth)
     token = ws.query_params.get("token", "")
     is_local = _is_local(ws)
     is_tailnet = _is_tailnet(ws)
     log.info(f"[auth] host={ws.client.host if ws.client else '?'} local={is_local} "
-             f"tailnet={is_tailnet} token_match={token == JARVIS_TOKEN} "
+             f"tailnet={is_tailnet} token_match={token == ORB_TOKEN} "
              f"funnel={bool(ws.headers.get('tailscale-funnel-request'))}")
-    if not is_local and not is_tailnet and token != JARVIS_TOKEN:
+    if not is_local and not is_tailnet and token != ORB_TOKEN:
         await ws.close(code=4401, reason="unauthorized")
         log.warning(f"Rejected unauthorized WS from {ws.client.host if ws.client else '?'}")
         return
@@ -5276,7 +5270,7 @@ async def voice_ws(ws: WebSocket):
     if client_kind == "mobile":
         _MOBILE_CLIENTS.add(ws)
     conv = get_conversation()
-    last_jarvis_reply = ""
+    last_orb_reply = ""
     last_reply_time = 0.0
     state = {
         "claude_task": None,
@@ -5285,9 +5279,9 @@ async def voice_ws(ws: WebSocket):
         "claude_started": 0.0,   # epoch start time
         "claude_result": "",     # real final summary (grounded in actual output)
         "claude_folder": "",     # folder created, if any (verified on disk)
-        "pending_claude": None,  # a task JARVIS offered to hand to Claude Code,
+        "pending_claude": None,  # a task Orb offered to hand to Claude Code,
                                  # run if the user's next turn affirms ("yes/do it")
-        "pending_brain_switch": None,  # (model, reason) JARVIS proposed switching to;
+        "pending_brain_switch": None,  # (model, reason) Orb proposed switching to;
                                         # applied if the user's next turn affirms
         # PC tier (tool-relay): the phone advertises its OrbToolKit tools + connector
         # state + APNs token via a {type:"hello"}; the agent loop calls them over the WS.
@@ -5334,8 +5328,8 @@ async def voice_ws(ws: WebSocket):
         origin = f"remote ({ws.client.host})"
     log.info(f"Client connected ({origin}, {client_kind})")
 
-    # Conversational follow-up window: after JARVIS responds, the user has this
-    # many seconds to ask a follow-up WITHOUT saying "Jarvis" again. Closes
+    # Conversational follow-up window: after Orb responds, the user has this
+    # many seconds to ask a follow-up WITHOUT saying "Orb" again. Closes
     # automatically; resets on each response.
     FOLLOWUP_WINDOW_SEC = 10.0
     state["last_response_end"] = 0.0
@@ -5358,15 +5352,15 @@ async def voice_ws(ws: WebSocket):
 
     async def respond(reply: str):
         """TTS and send audio response. No-op if the client has disconnected."""
-        nonlocal last_jarvis_reply, last_reply_time
+        nonlocal last_orb_reply, last_reply_time
         # never-deny safety net only. The old _ensure_next_step appended a canned
         # "shall I try a different source, search images, or hand it to Claude Code,
         # sir?" to anything that looked like a soft failure — programmatic cruft that
         # leaks into conversation and is nonsensical now (we ARE Claude Code). The
         # brain handles "what next" itself; we just keep the rare refusal-reframe.
         reply = _reframe_refusal(reply)
-        _log_chat("jarvis", reply)
-        last_jarvis_reply = reply.lower().strip().rstrip(".")
+        _log_chat("orb", reply)
+        last_orb_reply = reply.lower().strip().rstrip(".")
         last_reply_time = time.time()
         state["last_response_end"] = time.time()
         if ws.client_state.name != "CONNECTED":
@@ -5404,20 +5398,20 @@ async def voice_ws(ws: WebSocket):
                 log.warning(f"[respond] push fallback failed: {e2}")
 
     def is_echo(text: str) -> bool:
-        """Detect if the transcript is just JARVIS's own speech picked up by the mic."""
+        """Detect if the transcript is just Orb's own speech picked up by the mic."""
         if time.time() - last_reply_time > 10:
             return False
         incoming = text.lower().strip().rstrip(".")
-        if not last_jarvis_reply:
+        if not last_orb_reply:
             return False
         # Exact or near-exact match
-        if incoming == last_jarvis_reply:
+        if incoming == last_orb_reply:
             return True
-        # Partial match — if most of JARVIS's reply appears in the input
-        if len(incoming) > 5 and (incoming in last_jarvis_reply or last_jarvis_reply in incoming):
+        # Partial match — if most of Orb's reply appears in the input
+        if len(incoming) > 5 and (incoming in last_orb_reply or last_orb_reply in incoming):
             return True
         # Check word overlap
-        reply_words = set(last_jarvis_reply.split())
+        reply_words = set(last_orb_reply.split())
         input_words = set(incoming.split())
         if reply_words and len(reply_words & input_words) / len(reply_words) > 0.6:
             return True
@@ -5426,7 +5420,7 @@ async def voice_ws(ws: WebSocket):
     async def process_transcript(raw_text: str, typed: bool = False):
         """Run a transcript through the full pipeline. Shared by the local-Whisper
         audio path and the typed chat path. `typed` input (from the chat HUD)
-        bypasses echo + wake-word gating — you shouldn't type 'Jarvis' each line."""
+        bypasses echo + wake-word gating — you shouldn't type 'Orb' each line."""
         raw_text = raw_text.strip()
         if not raw_text:
             return
@@ -5448,13 +5442,13 @@ async def voice_ws(ws: WebSocket):
             typed = True  # no wake word in bundled context messages
 
         # The pure user message, for tools that need to know what THIS turn
-        # actually asked (switch_brain's user-requested-vs-JARVIS-idea guard).
+        # actually asked (switch_brain's user-requested-vs-Orb-idea guard).
         state["last_user_text"] = raw_text
 
         # Typed chat input skips echo + wake-word gating entirely.
         if typed:
             pass
-        # Echo detection — drop if it's just JARVIS hearing himself.
+        # Echo detection — drop if it's just Orb hearing himself.
         # MUST send a recovery status or the frontend stays stuck on "thinking".
         elif is_echo(raw_text):
             log.info(f"[echo] dropped: {raw_text}")
@@ -5462,7 +5456,7 @@ async def voice_ws(ws: WebSocket):
             return
 
         # WAKE WORD GATE — but with a follow-up grace window so the user can
-        # ask "and tomorrow?" right after a response without re-saying "Jarvis".
+        # ask "and tomorrow?" right after a response without re-saying "Orb".
         in_followup = (time.time() - state["last_response_end"]) < FOLLOWUP_WINDOW_SEC
         # Push-to-talk (mobile orb tap) arms an 8s window where the next utterance
         # is accepted WITHOUT the wake word (one question).
@@ -5476,7 +5470,7 @@ async def voice_ws(ws: WebSocket):
         # utterances landing within 3s of our reply going out are dropped.
         # (Proper fix is the app pausing capture during playback — iMac item.)
         mobile_no_wake = (client_kind == "mobile"
-                          and os.getenv("JARVIS_MOBILE_NO_WAKE", "1") == "1")
+                          and os.getenv("ORB_MOBILE_NO_WAKE", "1") == "1")
         if (mobile_no_wake and not typed and not contains_wake_word(raw_text)
                 and (time.time() - state["last_response_end"]) < 3.0):
             log.info(f"[echo] dropped (TTS-bleed window): {raw_text}")
@@ -5497,7 +5491,7 @@ async def voice_ws(ws: WebSocket):
         log.info(f"[user] {raw_text}" + (f" -> [{text}]" if text != raw_text else ""))
         _log_chat("user", raw_text)
 
-        # 0a. Bare wake — the user said only "Jarvis" / "hey jarvis" with no
+        # 0a. Bare wake — the user said only "Orb" / "hey orb" with no
         # follow-up. Skip the LLM entirely and pick from a varied reply pool
         # in personas.py. Without this intercept the empty post-strip text
         # falls into ollama_chat_with_tools and Qwen keeps gravitating to
@@ -5547,7 +5541,7 @@ async def voice_ws(ws: WebSocket):
         # use `text`.
         cmd = _command_form(text)
 
-        # 0a. Pending Claude Code offer — if JARVIS just offered to hand a task
+        # 0a. Pending Claude Code offer — if Orb just offered to hand a task
         # to Claude Code and the user affirms ("yes" / "do it"), ACTUALLY run it.
         # Fixes "I said yes and it didn't do it." A stale offer is dropped if the
         # user says something else instead.
@@ -5567,10 +5561,10 @@ async def voice_ws(ws: WebSocket):
             elif not is_affirmation(cmd):
                 state["pending_claude"] = None  # user moved on; offer expires
 
-        # 0a2. Pending brain-switch proposal — JARVIS suggested switching brains
+        # 0a2. Pending brain-switch proposal — Orb suggested switching brains
         # on its own initiative (propose_brain_switch tool); only apply it if the
         # user's next turn affirms. Same shape as the pending_claude offer above —
-        # human stays in the loop for anything JARVIS initiates, not just what it's told.
+        # human stays in the loop for anything Orb initiates, not just what it's told.
         if state.get("pending_brain_switch"):
             if is_affirmation(cmd):
                 model, switch_reason = state["pending_brain_switch"]
@@ -5665,7 +5659,7 @@ async def voice_ws(ws: WebSocket):
         # The thin agentic loop (agent.py) is the conversational brain: the model
         # sees the conversation + its tools and decides to talk or call a tool.
         # Haiku orchestrates everything — tools, Claude Code, brain switching.
-        # Toggle off with JARVIS_AGENT_SPINE=0.
+        # Toggle off with ORB_AGENT_SPINE=0.
         if _AGENT_SPINE:
             conv.add_user(raw_text)
             # Instant ack (optional, flag-gated): only worth it on a slow claude
@@ -5762,7 +5756,7 @@ async def voice_ws(ws: WebSocket):
         # Deterministic regex found nothing; try a cosine match against the intent
         # exemplars. Fires ONLY a confident, read-only, offline-routable intent (the
         # hybrid policy: reads bold, actions never auto-fire here); everything else
-        # falls through to the Haiku rewrite below. OFF unless JARVIS_SEMANTIC_ROUTER=1.
+        # falls through to the Haiku rewrite below. OFF unless ORB_SEMANTIC_ROUTER=1.
         if not intent and not followup and semantic_router and semantic_router.enabled():
             try:
                 dec = await semantic_router.decide(cmd)
@@ -5791,7 +5785,7 @@ async def voice_ws(ws: WebSocket):
         if intent:
             log.info(f"[intent] {intent.tool}({intent.args})")
             # RESEARCH ('tell me about X') -> Haiku writes a thorough briefing;
-            # JARVIS speaks one line, the card shows 1-2 rich paragraphs (+ photos
+            # Orb speaks one line, the card shows 1-2 rich paragraphs (+ photos
             # for a person/place). Not a registered tool — handled here.
             # CHAT: 'open chat' / 'let me type' -> the typed chat HUD.
             if intent.tool == "open_chat":
@@ -5813,7 +5807,7 @@ async def voice_ws(ws: WebSocket):
 
             # SCREENSHOT: 'show me my screen' / 'take a screenshot' -> capture the
             # desktop. On mobile it pops as a HUD image panel; on desktop it's
-            # saved to JARVIS_Output. The first step of the desktop bridge.
+            # saved to Orb_Output. The first step of the desktop bridge.
             if intent.tool == "screenshot":
                 status = _take_and_dispatch_screenshot()
                 if status == "mobile":
@@ -5843,7 +5837,7 @@ async def voice_ws(ws: WebSocket):
                 _set_focus(state, subj)
                 conv.add_user(raw_text)
                 # Run in the BACKGROUND so the user can keep talking; cards pop as
-                # the work lands and JARVIS announces completion. Not abandoned if
+                # the work lands and Orb announces completion. Not abandoned if
                 # the user says something else.
                 asyncio.create_task(_run_deep_research(subj, respond, conv, ws))
                 await respond(f"On it, sir — researching {subj}. I'll keep working "
@@ -5995,7 +5989,7 @@ async def voice_ws(ws: WebSocket):
                 else:
                     reply = await naturalize(text, raw_result, history=conv.messages)
                 conv.add_user(raw_text); conv.add_assistant(reply)
-                log.info(f"[jarvis] {reply}")
+                log.info(f"[orb] {reply}")
                 # Auto-pop a HUD card for visual/structured results (weather,
                 # news, system, calc, lookup). The card self-fetches fresh data
                 # for presets; calc/lookup use the result directly.
@@ -6032,9 +6026,9 @@ async def voice_ws(ws: WebSocket):
             elif st == "done":
                 folder = state["claude_folder"]
                 if folder:
-                    reply = f"Finished, sir. {state['claude_result']} The folder is '{folder}' in JARVIS Output."
+                    reply = f"Finished, sir. {state['claude_result']} The folder is '{folder}' in Orb Output."
                 else:
-                    reply = (f"It finished, sir, but I don't see a new folder in JARVIS Output — "
+                    reply = (f"It finished, sir, but I don't see a new folder in Orb Output — "
                              f"it may not have written files. {state['claude_result']}")
             else:  # failed
                 reply = f"It didn't complete, sir. {state['claude_result']}"
@@ -6085,14 +6079,14 @@ async def voice_ws(ws: WebSocket):
                 # are needed here — capabilities stay identical, only the
                 # talking model changes.
                 reply = await brain.claude_chat(conv.messages, system_prompt)
-                log.info(f"[jarvis/{brain.current_brain()}] {reply}")
+                log.info(f"[orb/{brain.current_brain()}] {reply}")
             else:
                 reply, used = await ollama_chat_with_tools(conv.messages, system_prompt)
                 if used:
                     log.info(f"[tools-used] {used}")
                     state["last_tool"] = used[-1]
                 # ESCALATION: if the local model waffled or dead-ended, hand off
-                # to real Claude (zero-auth `claude -p`) so JARVIS keeps moving
+                # to real Claude (zero-auth `claude -p`) so Orb keeps moving
                 # toward a real answer instead of "I don't know." This is what
                 # makes it feel intelligent rather than a canned router.
                 if not used and brain.is_weak_reply(reply) and brain.claude_available():
@@ -6119,7 +6113,7 @@ async def voice_ws(ws: WebSocket):
                     except Exception as e:
                         log.warning(f"[escalate] failed, keeping local reply: {e}")
                 else:
-                    log.info(f"[jarvis] {reply}")
+                    log.info(f"[orb] {reply}")
             # REPETITION GUARD — a verbatim/near-identical repeat is the #1 "this
             # feels like a looping bot" failure. If we just said this, re-roll once
             # hotter with an explicit "don't repeat yourself" instruction.
@@ -6328,7 +6322,7 @@ if __name__ == "__main__":
     log.info(f"Voice: {TTS_VOICE}")
     log.info(f"Desktop commands: {len(DESKTOP_COMMANDS)} registered")
     log.info("=" * 60)
-    log.info(f"  PAIRING TOKEN (Orb app -> Settings -> Your Server): {JARVIS_TOKEN}")
+    log.info(f"  PAIRING TOKEN (Orb app -> Settings -> Your Server): {ORB_TOKEN}")
     log.info("  (localhost connections are always allowed without token)")
     log.info("=" * 60)
     uvicorn.run(app, host="0.0.0.0", port=PORT)

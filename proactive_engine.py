@@ -1,4 +1,4 @@
-"""JARVIS Proactive Engine — data collection + planned execution.
+"""Orb Proactive Engine — data collection + planned execution.
 
 Flow:
   1. Cheap detectors run every 15s (zero AI): log events, fire unambiguous alerts.
@@ -55,23 +55,23 @@ _NOTIF_LOG      = _DATA_DIR / "notification_log.jsonl"
 _CONTEXT_FILE   = _DATA_DIR / "proactive_context.json"
 _PLAN_FILE      = _DATA_DIR / "active_plan.json"
 _PROPOSALS_FILE = _DATA_DIR / "proposals.json"
-_SESSIONS_DIR   = Path.home() / "Desktop" / "jarvis_sessions"
+_SESSIONS_DIR   = Path.home() / "Desktop" / "orb_sessions"
 
-_MAX_EXTRA_REVIEWS     = int(os.getenv("JARVIS_MAX_EXTRA_REVIEWS", "2"))
+_MAX_EXTRA_REVIEWS     = int(os.getenv("ORB_MAX_EXTRA_REVIEWS", "2"))
 # Fixed clock-time synthesis hours, not a rolling interval — "6am and 6pm",
 # not "every 12h from whenever the server happened to start". Comma-separated
 # 24h-clock hours.
 _SYNTHESIS_HOURS = sorted({
-    int(h.strip()) for h in os.getenv("JARVIS_SYNTHESIS_HOURS", "6,18").split(",") if h.strip()
+    int(h.strip()) for h in os.getenv("ORB_SYNTHESIS_HOURS", "6,18").split(",") if h.strip()
 })
 
 # Hard-recurring 6h high-bar scan (2026-07-20). The old design was a self-
 # rescheduling kind=task: each run had to re-arm +6h. When one link failed to
 # re-schedule, the chain silently died (~29h gap after 7/19 15:46). This is now
 # engine-owned like _SYNTHESIS_HOURS — a single miss cannot kill the cadence.
-# Kill switch: JARVIS_SIX_HOUR_SCAN=0. Interval hours: JARVIS_SIX_HOUR_INTERVAL_H.
-_SIX_HOUR_ENABLED = os.getenv("JARVIS_SIX_HOUR_SCAN", "1") != "0"
-_SIX_HOUR_INTERVAL_S = max(0.25, float(os.getenv("JARVIS_SIX_HOUR_INTERVAL_H", "6"))) * 3600.0
+# Kill switch: ORB_SIX_HOUR_SCAN=0. Interval hours: ORB_SIX_HOUR_INTERVAL_H.
+_SIX_HOUR_ENABLED = os.getenv("ORB_SIX_HOUR_SCAN", "1") != "0"
+_SIX_HOUR_INTERVAL_S = max(0.25, float(os.getenv("ORB_SIX_HOUR_INTERVAL_H", "6"))) * 3600.0
 _SIX_HOUR_TITLE = "6h proactive check"
 
 _JOB_APPS_FILE = _DATA_DIR / "job_applications.json"
@@ -79,17 +79,17 @@ _PENDING_CALENDAR_FILE = _DATA_DIR / "pending_calendar_actions.json"
 
 # Known project dirs — used for staleness + git activity. Operator-specific
 # config, not source (moved to env 2026-07-03 for the OSS snapshot):
-# JARVIS_PROJECT_DIRS is a JSON list of [label, path] pairs ("~" expands).
+# ORB_PROJECT_DIRS is a JSON list of [label, path] pairs ("~" expands).
 # Unset = no project tracking, the right default for a fresh install.
 def _project_dirs_from_env() -> list[tuple[str, Path]]:
-    raw = os.getenv("JARVIS_PROJECT_DIRS", "")
+    raw = os.getenv("ORB_PROJECT_DIRS", "")
     if not raw:
         return []
     try:
         return [(str(label), Path(os.path.expanduser(str(p))))
                 for label, p in json.loads(raw)]
     except Exception:
-        log.warning("[proactive] bad JARVIS_PROJECT_DIRS "
+        log.warning("[proactive] bad ORB_PROJECT_DIRS "
                     "(want JSON [[label, path], ...]) — project tracking off")
         return []
 
@@ -226,7 +226,7 @@ def _load_plan() -> None:
         # failure class the reminders rebuild exists to kill. Unfired items
         # missed by less than the grace window are restored and fire on the
         # first tick, honestly marked late; only genuinely stale ones drop.
-        grace = timedelta(hours=float(os.getenv("JARVIS_SCHED_GRACE_H", "18")))
+        grace = timedelta(hours=float(os.getenv("ORB_SCHED_GRACE_H", "18")))
         for d in data.get("items", []):
             fire_at = datetime.fromisoformat(d["fire_at"])
             if d.get("fired"):
@@ -375,7 +375,7 @@ async def _run_scheduled_task(task: str) -> str:
     import shutil
     if not shutil.which("claude"):
         return "Couldn't run the task — the Claude CLI isn't available."
-    model = os.environ.get("JARVIS_TASK_MODEL", "sonnet")
+    model = os.environ.get("ORB_TASK_MODEL", "sonnet")
     desktop = os.path.join(os.path.expanduser("~"), "Desktop")
     try:
         proc = await asyncio.create_subprocess_exec(
@@ -398,11 +398,11 @@ async def _run_scheduled_task(task: str) -> str:
 
 async def _run_and_push_task(title: str, task: str) -> None:
     """Run a scheduled task and push the REAL result (never just the instruction).
-    The full result is also saved to Desktop/JARVIS_Files so it survives the push
+    The full result is also saved to Desktop/Orb_Files so it survives the push
     banner's length trim and Orb can read it back later."""
     result = await _run_scheduled_task(task)
     try:
-        outdir = os.path.join(os.path.expanduser("~"), "Desktop", "JARVIS_Files")
+        outdir = os.path.join(os.path.expanduser("~"), "Desktop", "Orb_Files")
         os.makedirs(outdir, exist_ok=True)
         safe = "".join(c if (c.isalnum() or c in " -_") else "_"
                        for c in (title or "task"))[:50].strip() or "task"
@@ -450,7 +450,7 @@ async def _apply_plan(plan: dict) -> None:
         if fire_at and fire_at > now:
             _schedule.append(ScheduledItem(
                 fire_at=fire_at, kind="notification",
-                title=n.get("title", "JARVIS"),
+                title=n.get("title", "Orb"),
                 body=n.get("body", ""),
                 notif_kind=n.get("kind", "info"),
                 attach_screenshot=bool(n.get("attach_screenshot", False)),
@@ -831,7 +831,7 @@ def _job_apps_summary() -> str:
 
 
 def update_job_application(company: str, status: str = "", notes: str = "") -> str:
-    """Update a job application record. Called by JARVIS tools or voice commands."""
+    """Update a job application record. Called by Orb tools or voice commands."""
     try:
         apps = json.loads(_JOB_APPS_FILE.read_text(encoding="utf-8")) if _JOB_APPS_FILE.exists() else []
     except Exception:
@@ -1040,7 +1040,7 @@ def _day_rhythm_block(events: list[dict]) -> str:
 
 
 def _backend_health_block() -> str:
-    """Is JARVIS's own backend healthy? Tail its own error log for anything
+    """Is Orb's own backend healthy? Tail its own error log for anything
     that looks like a real problem in the review window — self-awareness, not
     just watching everything else."""
     log_path = Path(__file__).parent / "backend_err.log"
@@ -1059,7 +1059,7 @@ def _backend_health_block() -> str:
 # ── Conversation context injection ───────────────────────────────────────────
 
 def get_conversation_context() -> str:
-    """Injected into every conversation system prompt so JARVIS always has
+    """Injected into every conversation system prompt so Orb always has
     the latest plan, upcoming schedule, and phone connector data."""
     parts: list[str] = []
 
@@ -1137,7 +1137,7 @@ def get_conversation_context() -> str:
         pass
 
     # Recent outbound notifications + autonomous activity — so when he taps a
-    # notification and asks "did it work?", JARVIS knows what he's talking
+    # notification and asks "did it work?", Orb knows what he's talking
     # about (gap found live 2026-07-02: a completion push landed and the
     # conversation had no idea it existed).
     try:
@@ -1327,14 +1327,14 @@ async def apply_pending_calendar_actions(dispatch_fn: Callable) -> None:
                 # eaten by the 8h content cooldown armed by the 23:01 fake-
                 # phone test push (identical title+body → identical hash).
                 await _push_fn(
-                    "JARVIS added to your calendar",
+                    "Orb added to your calendar",
                     f"{item['title']} — {item['time']}", "info", dedupe=False)
             log.info(f"[proactive] calendar event applied: {item['title']} ({item['time']}) -> {str(result)[:100]}")
         except Exception as e:
             log.warning(f"[proactive] calendar event apply failed for {item.get('title')}: {e}")
             if _push_fn:
                 await _push_fn(
-                    "JARVIS couldn't add a calendar event",
+                    "Orb couldn't add a calendar event",
                     f"{item.get('title', '?')} — {e}", "alert", dedupe=False)
 
 
@@ -1494,7 +1494,7 @@ _STARTED_AT = time.time()
 # clone pushed a disk alert 30s after first boot). Direct-fire alerts hold off
 # until the backend has been up a while; a condition that still matters will
 # still be true when the grace ends.
-_ALERT_BOOT_GRACE_S = int(os.getenv("JARVIS_ALERT_BOOT_GRACE_S")
+_ALERT_BOOT_GRACE_S = int(os.getenv("ORB_ALERT_BOOT_GRACE_S")
                           or os.getenv("ORB_ALERT_BOOT_GRACE_S") or "600")
 
 
@@ -1600,7 +1600,7 @@ async def _tick() -> None:
         cpu = psutil.cpu_percent(interval=0)
         if cpu > 90 and (cpu - _st.last_cpu) > 20 and not _alert_cooldown("cpu"):
             log_event("system_alert", event=f"CPU spike: {cpu:.0f}%")
-            await _direct_push("JARVIS", f"CPU at {cpu:.0f}%", "alert", "cpu")
+            await _direct_push("Orb", f"CPU at {cpu:.0f}%", "alert", "cpu")
         _st.last_cpu = cpu
     except Exception:
         pass
@@ -1609,7 +1609,7 @@ async def _tick() -> None:
         disk = psutil.disk_usage("C:\\").percent
         if disk > 90 and disk > _st.last_disk_pct + 2 and not _alert_cooldown("disk"):
             log_event("system_alert", event=f"Disk {disk:.0f}% full")
-            await _direct_push("JARVIS", f"C: drive is {disk:.0f}% full", "alert", "disk")
+            await _direct_push("Orb", f"C: drive is {disk:.0f}% full", "alert", "disk")
         _st.last_disk_pct = disk
     except Exception:
         pass
@@ -1623,7 +1623,7 @@ async def _tick() -> None:
         temp = int(r.stdout.strip())
         if temp > 85 and not _alert_cooldown("gpu_temp"):
             log_event("system_alert", event=f"GPU temp: {temp}°C")
-            await _direct_push("JARVIS", f"GPU at {temp}°C", "alert", "gpu_temp")
+            await _direct_push("Orb", f"GPU at {temp}°C", "alert", "gpu_temp")
     except Exception:
         pass
 
@@ -2178,7 +2178,7 @@ advance. Before it's urgent, not to pad the plan.
 == JOB APPLICATIONS ==
 {job_apps_block}
 
-== HIS SAVED NOTES (things he told JARVIS to keep; past reviews' notes land here too — don't re-save duplicates) ==
+== HIS SAVED NOTES (things he told Orb to keep; past reviews' notes land here too — don't re-save duplicates) ==
 {notes_block}
 
 == UNREAD EMAIL (off-device — job-application replies matter most here) ==
@@ -2211,7 +2211,7 @@ advance. Before it's urgent, not to pad the plan.
 == TECH NEWS (top 3 headlines) ==
 {news_block}
 
-== JARVIS BACKEND SELF-HEALTH ==
+== Orb BACKEND SELF-HEALTH ==
 {backend_health_block}
 
 == DROPPED BALLS (tool errors / dead turns / timeouts this window — his own ask: count these) ==
@@ -2241,7 +2241,7 @@ Output a plan as JSON. This plan drives everything until the next review.
       "attach_screenshot": false}}
   ],
   "notes": [
-    {{"text": "something worth saving to JARVIS's own note list — reminder, idea, follow-up"}}
+    {{"text": "something worth saving to Orb's own note list — reminder, idea, follow-up"}}
   ],
   "calendar_events": [
     {{"title": "short event title", "time": "e.g. 'tomorrow at 3pm' or 'Friday 10am'", "details": "optional context"}}
@@ -2286,7 +2286,7 @@ Rules:
   help the user understand what you're flagging (an error dialog, a stuck build, something
   visibly broken on screen) — only works if their phone is connected when it fires, and it's
   a real screen capture, not decoration, so don't set it for routine reminders.
-- `notes`: save something to JARVIS's own note list — a reminder, an idea worth not losing,
+- `notes`: save something to Orb's own note list — a reminder, an idea worth not losing,
   a follow-up to raise next conversation. Applied immediately, works even if the phone is
   asleep. Max 5. Don't use this for things that belong in `notifications` instead (anything
   time-sensitive that the user should be TOLD, not just have saved quietly).
@@ -2344,11 +2344,11 @@ Rules:
             if _muted_reason(f"{p.get('title','')} {prop_body}"):
                 continue
             if _push_fn:
-                await _push_fn(f"JARVIS idea: {p.get('title','')}", prop_body[:200], "info",
+                await _push_fn(f"Orb idea: {p.get('title','')}", prop_body[:200], "info",
                                source=f"review_{label}")
 
     if brief and _push_fn and not _muted_reason(brief):
-        await _push_fn("JARVIS", brief[:300], "info",
+        await _push_fn("Orb", brief[:300], "info",
                        topic="review_brief", source=f"review_{label}")
 
 

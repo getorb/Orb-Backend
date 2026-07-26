@@ -2,13 +2,13 @@
 Switchable / escalatable brain — ZERO AUTH via the `claude -p` CLI.
 
 Default brain is the local Ollama model (fast, handles routing + simple chat).
-For real reasoning, JARVIS shells out to `claude -p --model <haiku|sonnet|opus>`
+For real reasoning, Orb shells out to `claude -p --model <haiku|sonnet|opus>`
 — this machine's Claude Code is logged in, so it reaches REAL Claude with no
 API key (verified: `claude -p` returns claude-opus-4-8). Two uses:
 
   1. Manual: "switch to Sonnet" -> every reply routes through that model.
   2. Auto-escalation: when local Qwen waffles/can't, escalate to Claude (Haiku
-     by default) so JARVIS keeps moving toward a real answer instead of a
+     by default) so Orb keeps moving toward a real answer instead of a
      canned dead-end.
 
 `claude -p` spawns the full agent (~5-15s); fine per the user. We constrain the
@@ -87,10 +87,10 @@ _load_state()
 # The agent spine's DEFAULT conversational brain. The user wants to talk to
 # Haiku (its conversational quality + reliable tool-picking), with the local
 # model used only on an explicit "switch to local" OR as an automatic fallback
-# when claude -p is unavailable/rate-limited. Override via JARVIS_SPINE_BRAIN
+# when claude -p is unavailable/rate-limited. Override via ORB_SPINE_BRAIN
 # (e.g. =local to go back to the old fast/free default). Never silently use
 # Sonnet/Opus — those require an explicit voice switch.
-DEFAULT_AGENT_BRAIN = os.getenv("JARVIS_SPINE_BRAIN", "haiku").strip().lower()
+DEFAULT_AGENT_BRAIN = os.getenv("ORB_SPINE_BRAIN", "haiku").strip().lower()
 
 
 def current_brain() -> str:
@@ -165,7 +165,7 @@ def looks_like_limit(text: str) -> bool:
 # dead-ends. Add Gemini-free / Codex / etc. as more Backends later; nothing else
 # changes. Cooldown is short by default so a transient throttle recovers fast.
 
-ROUTER_COOLDOWN_SEC = float(os.getenv("JARVIS_BACKEND_COOLDOWN", "120"))
+ROUTER_COOLDOWN_SEC = float(os.getenv("ORB_BACKEND_COOLDOWN", "120"))
 
 
 @dataclass
@@ -275,15 +275,15 @@ def claude_available() -> bool:
 # OpenAI-compat endpoint, or a local llama.cpp / LM Studio / vLLM / gaming-PC
 # inference server streamed over the network.
 #
-# Configure with the JARVIS_FREE_BACKENDS env var (JSON list). UNSET = nothing
+# Configure with the ORB_FREE_BACKENDS env var (JSON list). UNSET = nothing
 # changes (the default on this dev machine — Haiku -> local floor, as before):
-#   JARVIS_FREE_BACKENDS='[{"name":"groq","base_url":"https://api.groq.com/openai/v1",
+#   ORB_FREE_BACKENDS='[{"name":"groq","base_url":"https://api.groq.com/openai/v1",
 #     "model":"llama-3.3-70b-versatile","api_key_env":"GROQ_API_KEY"}]'
 # A slot is "available" only when base_url + model are set AND (if it names an
 # api_key_env) that env var is non-empty — so an unconfigured/keyless slot is
 # skipped, never dead-ending a turn. Listed order = priority.
 
-OPENAI_COMPAT_TIMEOUT = float(os.getenv("JARVIS_FREE_TIMEOUT", "30"))
+OPENAI_COMPAT_TIMEOUT = float(os.getenv("ORB_FREE_TIMEOUT", "30"))
 
 
 def _openai_compat_call(base_url: str, model: str, api_key_env: str) -> Callable[[str], Awaitable[str]]:
@@ -314,7 +314,7 @@ def _openai_compat_call(base_url: str, model: str, api_key_env: str) -> Callable
 
 
 def openai_compat_backend(cfg: dict) -> Backend:
-    """Build a router Backend from a config dict (see JARVIS_FREE_BACKENDS)."""
+    """Build a router Backend from a config dict (see ORB_FREE_BACKENDS)."""
     name = cfg.get("name") or "free"
     base_url = (cfg.get("base_url") or "").rstrip("/")
     model = cfg.get("model") or ""
@@ -332,16 +332,16 @@ def openai_compat_backend(cfg: dict) -> Backend:
 
 
 def free_backends_from_env() -> list[Backend]:
-    """Parse JARVIS_FREE_BACKENDS (a JSON list, or a single object) into router
+    """Parse ORB_FREE_BACKENDS (a JSON list, or a single object) into router
     Backends in listed/priority order. Returns [] when unset/blank/malformed, so
     an absent or bad config silently changes nothing."""
-    raw = os.getenv("JARVIS_FREE_BACKENDS", "").strip()
+    raw = os.getenv("ORB_FREE_BACKENDS", "").strip()
     if not raw:
         return []
     try:
         items = json.loads(raw)
     except Exception as e:
-        log.warning(f"[router] JARVIS_FREE_BACKENDS ignored (bad JSON): {e}")
+        log.warning(f"[router] ORB_FREE_BACKENDS ignored (bad JSON): {e}")
         return []
     if isinstance(items, dict):
         items = [items]
@@ -622,12 +622,12 @@ async def claude_chat(messages: list[dict], system: str, max_tokens: int = 250) 
 
 async def escalate(messages: list[dict], system: str, model: str = "haiku") -> str:
     """Force a real-Claude answer regardless of the current brain — used when
-    the local model waffles, so JARVIS keeps moving toward a real answer.
+    the local model waffles, so Orb keeps moving toward a real answer.
 
     Also lets Claude honestly flag when the user actually wants a real-world
     DOING task it can't perform by speaking: it appends a line
     `OFFER_CLAUDE: <task>` which the caller turns into a 'shall I use Claude
-    Code?' offer (and runs on a yes). This is how JARVIS stops pretending and
+    Code?' offer (and runs on a yes). This is how Orb stops pretending and
     instead routes real work to Claude Code."""
     convo = "\n".join(f"{m['role']}: {m['content']}" for m in messages[-8:] if m.get("content"))
     user = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")

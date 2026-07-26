@@ -22,8 +22,8 @@ data/*
 *.db-wal
 backend.log
 backend_err.log
-JARVIS_Files/
-JARVIS_Output/
+Orb_Files/
+Orb_Output/
 
 # Tooling
 .claude/

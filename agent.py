@@ -39,7 +39,7 @@ import tool_registry
 # place to find that out the hard way. When OFF, the prompt never mentions
 # the plural form exists and the parsing branch for it is unreachable in
 # practice — byte-identical behavior to before this flag existed.
-PARALLEL_TOOLS = os.getenv("JARVIS_PARALLEL_TOOLS", "0") == "1"
+PARALLEL_TOOLS = os.getenv("ORB_PARALLEL_TOOLS", "0") == "1"
 
 # Tools the conversational agent may call. Curated to the data/awareness tools
 # (actions like volume/music stay on the deterministic fast lane for now). Sourced

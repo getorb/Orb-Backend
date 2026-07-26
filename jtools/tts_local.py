@@ -14,7 +14,7 @@ Kokoro model files (download once, ~310MB total):
 Place both in the repo root (same dir as server_win.py).
 
 Voice mappings (British English):
-    JARVIS  → bf_emma or bm_lewis (British male, calm)
+    Orb  → bf_emma or bm_lewis (British male, calm)
     ULTRON  → am_adam (American male, deeper)
     Fallback→ af_sky  (American female, clear)
 
@@ -36,7 +36,7 @@ _VOICES_PATH = _BASE / "voices.json"
 
 # Map edge-tts voice names → Kokoro voice IDs
 _VOICE_MAP = {
-    "en-GB-RyanNeural":   "bm_george",   # JARVIS: British male
+    "en-GB-RyanNeural":   "bm_george",   # Orb: British male
     "en-US-GuyNeural":    "am_adam",      # ULTRON: American male (deeper)
 }
 _FALLBACK_VOICE = "af_sky"

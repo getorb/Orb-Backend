@@ -11,7 +11,7 @@ wins. Falling through to None means the request goes to the LLM
 fallback path (free-form conversation or LLM tool-calling).
 
 The naturalization layer in server_win wraps the tool's raw output in
-JARVIS-voice prose; this router itself only decides WHICH tool runs.
+Orb-voice prose; this router itself only decides WHICH tool runs.
 """
 
 from __future__ import annotations
@@ -106,7 +106,7 @@ _FILE_READ = re.compile(
     r"(?:called\s+|named\s+)?[\"']?([\w.\-/ ]+?)[\"']?\s*$",
     re.IGNORECASE)
 _FILE_LIST = re.compile(
-    r"\b(?:list|show) (?:my )?(?:files|jarvis files|files in (?:my )?jarvis folder)\b",
+    r"\b(?:list|show) (?:my )?(?:files|orb files|files in (?:my )?orb folder)\b",
     re.IGNORECASE)
 
 # URL detection (scrape)
@@ -460,7 +460,7 @@ _HUD_VIEW_RE = re.compile(
 
 
 def match_hud_view(text: str) -> dict | None:
-    """'make a HUD/view/dashboard of X' -> display X (a research card). JARVIS
+    """'make a HUD/view/dashboard of X' -> display X (a research card). Orb
     CAN make HUD views — this stops such requests being mis-handed to Claude Code."""
     t = _strip_punct(text).strip()
     m = _HUD_VIEW_RE.search(t)

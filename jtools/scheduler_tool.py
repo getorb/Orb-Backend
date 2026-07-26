@@ -17,7 +17,7 @@ import urllib.request
 from tool_registry import tool
 import proactive_engine
 
-# ⚠ Process-identity guard: grok/codex tool calls run inside jarvis_mcp.py —
+# ⚠ Process-identity guard: grok/codex tool calls run inside orb_mcp.py —
 # a SEPARATE stdio process whose proactive_engine import is a blank copy
 # (empty _schedule, never wire()d). Scheduling there would append to nothing
 # and _save_plan would clobber the real active_plan.json with a near-empty
@@ -25,7 +25,7 @@ import proactive_engine
 # as "am I the live backend?" — when unset, relay over loopback HTTP to the
 # endpoints that hit the real in-memory engine. Claude-family brains use the
 # resident in-process /mcp and always take the direct path.
-_BASE = "http://localhost:" + (os.environ.get("JARVIS_PORT")
+_BASE = "http://localhost:" + (os.environ.get("ORB_PORT")
                                or os.environ.get("ORB_PORT") or "8340")
 
 
@@ -34,11 +34,11 @@ def _in_backend() -> bool:
 
 
 def _http(method: str, path: str, payload: dict | None = None) -> dict:
-    # X-Jarvis-Token so the relay keeps working when JARVIS_HTTP_AUTH=1 — the
+    # X-Orb-Token so the relay keeps working when ORB_HTTP_AUTH=1 — the
     # stdio process inherits the backend's environment (.env already loaded).
     headers = {"Content-Type": "application/json"}
-    if os.environ.get("JARVIS_TOKEN"):
-        headers["X-Jarvis-Token"] = os.environ["JARVIS_TOKEN"]
+    if os.environ.get("ORB_TOKEN"):
+        headers["X-Orb-Token"] = os.environ["ORB_TOKEN"]
     req = urllib.request.Request(
         _BASE + path, method=method,
         data=json.dumps(payload).encode("utf-8") if payload is not None else None,

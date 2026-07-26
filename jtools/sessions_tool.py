@@ -1,7 +1,7 @@
 """Session status + management tools — read status, send messages, start and resume CC sessions.
 
 Any CC session, training script, or background task can write a status file to
-Desktop/jarvis_sessions/<name>.json. This tool reads all of them so the user can
+Desktop/orb_sessions/<name>.json. This tool reads all of them so the user can
 ask "what's happening with MyProject?" and get a real answer.
 
 Status file format (write from any process):
@@ -15,8 +15,8 @@ Status file format (write from any process):
 
 Write from a CC session or training script:
   import json, pathlib, datetime
-  pathlib.Path.home().joinpath("Desktop/jarvis_sessions").mkdir(exist_ok=True)
-  pathlib.Path.home().joinpath("Desktop/jarvis_sessions/myproject.json").write_text(
+  pathlib.Path.home().joinpath("Desktop/orb_sessions").mkdir(exist_ok=True)
+  pathlib.Path.home().joinpath("Desktop/orb_sessions/myproject.json").write_text(
       json.dumps({"session":"myproject","status":"running","message":"Epoch 23/30","progress":75,
                   "updated": datetime.datetime.now().isoformat(timespec="seconds")})
   )
@@ -29,7 +29,7 @@ from datetime import datetime
 from pathlib import Path
 from tool_registry import tool
 
-_SESSIONS_DIR = Path.home() / "Desktop" / "jarvis_sessions"
+_SESSIONS_DIR = Path.home() / "Desktop" / "orb_sessions"
 
 
 @tool(
@@ -365,7 +365,7 @@ def _book_supervision(name: str, task: str) -> None:
     try:
         import os as _os
         import mind as _mind
-        mins = float(_os.getenv("JARVIS_SESSION_CHECKBACK_MIN", "20"))
+        mins = float(_os.getenv("ORB_SESSION_CHECKBACK_MIN", "20"))
         _mind.request_wake_at(mins, f"supervision: check on session '{name}' ({task[:70]})")
     except Exception:
         pass

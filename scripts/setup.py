@@ -88,7 +88,7 @@ def check(interactive: bool) -> bool:
     else:
         print("– claude CLI not found: install Claude Code for the default brain "
               "(npm install -g @anthropic-ai/claude-code), or configure "
-              "JARVIS_FREE_BACKENDS / a local model")
+              "ORB_FREE_BACKENDS / a local model")
     if shutil.which("tailscale"):
         print("✓ tailscale on PATH (recommended transport)")
     else:
@@ -116,12 +116,12 @@ def main() -> int:
             ENV.write_text("", encoding="utf-8")
             say("Created empty .env")
 
-    # 2. Token (ORB_TOKEN is the documented name; legacy JARVIS_TOKEN still works)
+    # 2. Token (ORB_TOKEN is the documented name; legacy ORB_TOKEN still works)
     vals = read_env()
-    port = vals.get("ORB_PORT") or vals.get("JARVIS_PORT") or "8340"
-    if vals.get("ORB_TOKEN") or vals.get("JARVIS_TOKEN"):
+    port = vals.get("ORB_PORT") or vals.get("ORB_PORT") or "8340"
+    if vals.get("ORB_TOKEN") or vals.get("ORB_TOKEN"):
         say("Pairing token already set — keeping it.")
-        token = vals.get("ORB_TOKEN") or vals["JARVIS_TOKEN"]
+        token = vals.get("ORB_TOKEN") or vals["ORB_TOKEN"]
     else:
         token = secrets.token_hex(32)
         write_env_value("ORB_TOKEN", token)

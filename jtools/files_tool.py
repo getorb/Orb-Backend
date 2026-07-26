@@ -1,4 +1,4 @@
-"""File operations — reads scoped to Desktop, writes scoped to Desktop\\JARVIS_Files."""
+"""File operations — reads scoped to Desktop, writes scoped to Desktop\\Orb_Files."""
 
 import logging
 from pathlib import Path
@@ -8,7 +8,7 @@ from tool_registry import tool
 log = logging.getLogger("orb.tools.files")
 
 DESKTOP = Path.home() / "Desktop"
-WRITE_SANDBOX = DESKTOP / "JARVIS_Files"
+WRITE_SANDBOX = DESKTOP / "Orb_Files"
 WRITE_SANDBOX.mkdir(parents=True, exist_ok=True)
 
 MAX_READ_BYTES = 50_000
@@ -29,15 +29,15 @@ def _resolve_read(name: str) -> Path:
 
 
 def _resolve_write(name: str) -> Path:
-    """Resolve a path for writing — stays within JARVIS_Files."""
+    """Resolve a path for writing — stays within Orb_Files."""
     if not name or not name.strip():
         raise ValueError("empty filename")
     p = Path(name.strip())
     if p.is_absolute() or ".." in p.parts:
-        raise ValueError("path must be relative and stay inside JARVIS_Files")
+        raise ValueError("path must be relative and stay inside Orb_Files")
     target = (WRITE_SANDBOX / p).resolve()
     if WRITE_SANDBOX.resolve() not in target.parents and target != WRITE_SANDBOX.resolve():
-        raise ValueError("path escapes JARVIS_Files")
+        raise ValueError("path escapes Orb_Files")
     return target
 
 
@@ -45,7 +45,7 @@ def _resolve_write(name: str) -> Path:
     name="read_file",
     description=(
         "Read a text file from the user's Desktop (or any subfolder on it, including "
-        "JARVIS_Files and JARVIS_Output). Use when the user asks 'read me X', "
+        "Orb_Files and Orb_Output). Use when the user asks 'read me X', "
         "'what's in X', 'what did Claude Code build', 'show me the poem', etc. "
         "Pass just a filename to search the Desktop root first."
     ),
@@ -54,7 +54,7 @@ def _resolve_write(name: str) -> Path:
             "type": "string",
             "description": (
                 "Filename or relative path on the Desktop "
-                "(e.g. 'note.txt', 'JARVIS_Output/poem.txt', 'JARVIS_Files/ideas.md')."
+                "(e.g. 'note.txt', 'Orb_Output/poem.txt', 'Orb_Files/ideas.md')."
             ),
         },
     },
@@ -67,7 +67,7 @@ async def read_file(name: str) -> str:
         return f"Can't access that file — {e}."
     if not p.exists():
         # Try common subfolders automatically before giving up.
-        for subdir in ("JARVIS_Output", "JARVIS_Files"):
+        for subdir in ("Orb_Output", "Orb_Files"):
             alt = _resolve_read(subdir + "/" + name) if ".." not in name else None
             if alt and alt.exists():
                 p = alt
@@ -90,14 +90,14 @@ async def read_file(name: str) -> str:
 @tool(
     name="write_file",
     description=(
-        "Write text to a file in the JARVIS_Files folder on the Desktop. Overwrites "
+        "Write text to a file in the Orb_Files folder on the Desktop. Overwrites "
         "if it exists. Use when the user says 'save this as X', 'write a note', "
         "'create a file named Y'."
     ),
     parameters={
         "name": {
             "type": "string",
-            "description": "Filename (e.g. 'idea.txt', 'subfolder/log.md'). Path stays inside JARVIS_Files.",
+            "description": "Filename (e.g. 'idea.txt', 'subfolder/log.md'). Path stays inside Orb_Files.",
         },
         "content": {
             "type": "string",
@@ -127,14 +127,14 @@ async def write_file(name: str, content: str) -> str:
     description=(
         "List files on the user's Desktop (or a specific subfolder on it). "
         "Use when the user asks 'what's on my desktop', 'what files do I have', "
-        "'what did Claude Code build', 'list JARVIS_Output', etc."
+        "'what did Claude Code build', 'list Orb_Output', etc."
     ),
     parameters={
         "subfolder": {
             "type": "string",
             "description": (
-                "Subfolder to list, relative to Desktop (e.g. 'JARVIS_Output', "
-                "'JARVIS_Files'). Leave empty to list the Desktop root."
+                "Subfolder to list, relative to Desktop (e.g. 'Orb_Output', "
+                "'Orb_Files'). Leave empty to list the Desktop root."
             ),
         },
     },
