@@ -64,7 +64,7 @@ def _write_inbox(name: str, message: str) -> None:
     required=["session_name"],
 )
 async def stop_session(session_name: str, force: bool = False) -> str:
-    from jtools.activity_log import log_activity
+    from otools.activity_log import log_activity
     data = _read_session(session_name)
     if not data:
         return f"No session '{session_name}' found. Use check_sessions to list running sessions."
@@ -104,7 +104,7 @@ async def stop_session(session_name: str, force: bool = False) -> str:
     required=["session_name"],
 )
 async def pause_session(session_name: str) -> str:
-    from jtools.activity_log import log_activity
+    from otools.activity_log import log_activity
     data = _read_session(session_name)
     if not data:
         return f"No session '{session_name}' found."
@@ -127,7 +127,7 @@ async def pause_session(session_name: str) -> str:
     required=["session_name"],
 )
 async def resume_session(session_name: str, message: str = "resume") -> str:
-    from jtools.activity_log import log_activity
+    from otools.activity_log import log_activity
     data = _read_session(session_name)
     if not data:
         return f"No session '{session_name}' found."

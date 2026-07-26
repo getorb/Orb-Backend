@@ -85,7 +85,7 @@ async def gather(subject: str, max_snippets: int = 5) -> str:
         # DuckDuckGo scrape if SearXNG is down.
         snips: list[str] = []
         try:
-            from jtools import searxng_tool
+            from otools import searxng_tool
             snips = await searxng_tool.searx_web(subject, max_snippets)
         except Exception as e:
             log.warning(f"[research] searxng web failed: {e}")

@@ -170,7 +170,7 @@ async def run_forever() -> None:
 
 
 def _flush(project: str, files: set) -> None:
-    from jtools.activity_log import log_activity
+    from otools.activity_log import log_activity
     import json as _json
     from pathlib import Path as _Path
     from datetime import datetime as _dt

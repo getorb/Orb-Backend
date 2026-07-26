@@ -122,7 +122,7 @@ def _coerce_args(args: dict, schema: dict) -> dict:
 def import_all_tools():
     """Side-effect import to populate the registry. Called once at startup."""
     # Each import registers its tools via the @tool decorator
-    from jtools import (  # noqa: F401
+    from otools import (  # noqa: F401
         weather_tool, lookup_tool, scraper_tool, news_tool,
         files_tool, system_tool, notes_tool, calculator_tool,
         images_tool, finance_tool, claude_code_tool, brain_switch_tool,

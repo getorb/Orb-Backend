@@ -1,8 +1,8 @@
-"""Voice-facing tools for the data watchlist (jtools/data_watcher.py) — track
+"""Voice-facing tools for the data watchlist (otools/data_watcher.py) — track
 something over time instead of just checking it once."""
 
 from tool_registry import tool
-from jtools import data_watcher
+from otools import data_watcher
 
 
 @tool(

@@ -260,7 +260,7 @@ async def start_terminal_session(session_name: str, command: str = "", working_d
     import uuid as _uuid
     from datetime import datetime
     from pathlib import Path
-    from jtools.activity_log import log_activity
+    from otools.activity_log import log_activity
 
     sessions_dir = Path.home() / "Desktop" / "orb_sessions"
     sessions_dir.mkdir(parents=True, exist_ok=True)

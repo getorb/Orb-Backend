@@ -37,17 +37,17 @@ async def self_audit(check: str = "all") -> str:
         # Spot-check a few tools that have had issues
         issues: list[str] = []
         try:
-            import jtools.lookup_tool  # noqa
+            import otools.lookup_tool  # noqa
         except Exception as e:
             issues.append(f"lookup_fact import error: {e}")
         try:
-            import jtools.screenshot_tool as _ss
+            import otools.screenshot_tool as _ss
             if _ss._dispatch_fn is None:
                 issues.append("take_screenshot: dispatch not wired (backend not fully started?)")
         except Exception as e:
             issues.append(f"take_screenshot error: {e}")
         try:
-            import jtools.notify_tool as _nt
+            import otools.notify_tool as _nt
             if _nt._deliver_fn is None:
                 issues.append("send_notification: deliver fn not wired")
         except Exception as e:

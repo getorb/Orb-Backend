@@ -23,7 +23,7 @@ import re
 import httpx
 
 from tool_registry import tool
-from jtools.cache_util import ttl_cache
+from otools.cache_util import ttl_cache
 
 log = logging.getLogger("orb.tools.images")
 
@@ -233,7 +233,7 @@ async def search_images(query: str, count: int = 12) -> list[dict]:
     # PRIMARY: SearXNG (self-hosted metasearch — accurate, no single-engine
     # throttle). If it returns enough, we're done. Else fall to the scrapers.
     try:
-        from jtools import searxng_tool
+        from otools import searxng_tool
         _add(await searxng_tool.searx_images(cleaned, count))
         if len(results) >= 3:
             return results[:count]

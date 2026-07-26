@@ -89,7 +89,7 @@ def _log_point(source_type: str, target: str, value: dict) -> None:
 async def _collect_one(target: str, source_type: str) -> None:
     if source_type == "stock":
         try:
-            from jtools.finance_tool import get_stock
+            from otools.finance_tool import get_stock
             d = await get_stock(target)
             if d:
                 _log_point("stock", target, {"symbol": d["symbol"], "price": d["price"],

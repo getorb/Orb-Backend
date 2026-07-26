@@ -2,7 +2,7 @@
 
 from tool_registry import tool
 from tools import get_weather as _get_weather
-from jtools.cache_util import ttl_cache
+from otools.cache_util import ttl_cache
 
 
 @tool(

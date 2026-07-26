@@ -1224,7 +1224,7 @@ def _prefs_system_block() -> str:
     """Inject active user preferences + proactive plan context into the system prompt."""
     out = ""
     try:
-        from jtools.prefs_tool import preferences_system_block
+        from otools.prefs_tool import preferences_system_block
         block = preferences_system_block()
         if block:
             out += block + "\n"
@@ -2260,7 +2260,7 @@ async def _run_mcp_claude_turn(model_key: str, system_prompt: str, messages: lis
     if _leak != reply_text:
         log.warning("[mcp-claude] stripped JSON fragment(s) from the spoken reply")
         try:
-            from jtools.activity_log import log_activity as _log_act
+            from otools.activity_log import log_activity as _log_act
             _log_act("orb", "turn_error", "protocol leak: JSON fragment stripped from spoken reply")
         except Exception:
             pass
@@ -2414,7 +2414,7 @@ async def _agent_respond(conv, state) -> str:
         # Persist to the activity log FIRST — unconditional, no WS/mobile client
         # required. This is the real "track everything" record; the WS sends
         # below are just the live-feed nicety on top of it.
-        from jtools.activity_log import log_activity
+        from otools.activity_log import log_activity
         snippet = str(result)[:200].strip()
         log_activity("orb", "tool_result", snippet, tool=name)
         # PC-tier phone tools already surface their own chip/card ON THE PHONE
@@ -2463,7 +2463,7 @@ async def _agent_respond(conv, state) -> str:
                                    "message": f"{base_msg} ({elapsed}s)…", "tool": name})
 
     async def on_tool_start(name: str, args: dict):
-        from jtools.activity_log import log_activity
+        from otools.activity_log import log_activity
         msg = _TOOL_STATUS.get(name, lambda _: f"Working on {name}…")(args)
         log_activity("orb", "tool_start", msg, tool=name)
         if not _ws:
@@ -2566,7 +2566,7 @@ async def _agent_respond(conv, state) -> str:
             # Failure telemetry (Orb's introspection ask, 07-02): dead turns
             # must be countable by the synthesis, not just grep-able.
             try:
-                from jtools.activity_log import log_activity as _log_act
+                from otools.activity_log import log_activity as _log_act
                 _log_act("orb", "turn_error",
                          f"mcp-claude produced no reply on {agent_brain}; classic loop answered")
             except Exception:
@@ -2640,7 +2640,7 @@ async def _agent_respond(conv, state) -> str:
     # Persist this turn (user said X, Orb said Y) to the activity log — plain
     # string recording, no model call, so "orb" shows real conversation history
     # in the app even across reconnects.
-    from jtools.activity_log import log_activity
+    from otools.activity_log import log_activity
     if _last_user:
         log_activity("orb", "message", _last_user, speaker="user")
     log_activity("orb", "message", reply, speaker="orb")
@@ -3064,7 +3064,7 @@ async def _card_for_command(cmd: str, state: dict) -> str | None:
     t, a = intent.tool, intent.args
     try:
         if t == "search_images":
-            from jtools.images_tool import search_images
+            from otools.images_tool import search_images
             q = a.get("query", "")
             imgs = await search_images(q, 12)
             if imgs:
@@ -3072,8 +3072,8 @@ async def _card_for_command(cmd: str, state: dict) -> str | None:
                 _set_focus(state, q)
                 return f"images of {q}"
         elif t in ("research", "deep_research"):
-            from jtools import research_tool
-            from jtools.images_tool import search_images
+            from otools import research_tool
+            from otools.images_tool import search_images
             q = a.get("query", "")
             sources = await research_tool.gather(q)
             spoken, card, imgq = await brain.research_card(q, sources=sources)
@@ -3090,7 +3090,7 @@ async def _card_for_command(cmd: str, state: dict) -> str | None:
             _set_focus(state, imgq or q)
             return q
         elif t == "get_stock":
-            from jtools.finance_tool import get_stock as _gs
+            from otools.finance_tool import get_stock as _gs
             d = await _gs(a.get("query", ""))
             if d:
                 _spawn_card_payload({
@@ -3122,9 +3122,9 @@ async def _run_deep_research(subj: str, respond, conv, ws=None):
     if ws is not None:
         await _safe_send(ws, {"type": "pending", "on": True, "text": f"Researching {subj}…"})
     try:
-        from jtools import research_tool
-        from jtools.images_tool import search_images
-        from jtools.finance_tool import get_stock as _gs
+        from otools import research_tool
+        from otools.images_tool import search_images
+        from otools.finance_tool import get_stock as _gs
         # 1) gather live sources, then the grounded synthesis (which also gives a
         #    DISAMBIGUATED image query so photos are of the RIGHT subject).
         sources = await research_tool.gather(subj, max_snippets=6)
@@ -3328,7 +3328,7 @@ async def warm_up_model():
 # ---------------------------------------------------------------------------
 
 async def text_to_speech(text: str) -> bytes:
-    from jtools.tts_local import synthesize as _tts_synth
+    from otools.tts_local import synthesize as _tts_synth
     clean = re.sub(r"```[\s\S]*?```", "", text)
     clean = re.sub(r"`[^`]+`", "", clean)
     clean = clean.strip()
@@ -3537,9 +3537,9 @@ async def lifespan(app: FastAPI):
     tool_registry.import_all_tools()
     # Wire the screenshot dispatch callback so the tool can call it from within
     # the live WS context (ContextVar is set correctly at that point).
-    from jtools import screenshot_tool as _ss_tool
+    from otools import screenshot_tool as _ss_tool
     _ss_tool._dispatch_fn = _take_and_dispatch_screenshot
-    from jtools import notify_tool as _notify_tool
+    from otools import notify_tool as _notify_tool
     _notify_tool._deliver_fn = _push_notification
     # Pre-load Ollama so the first query isn't a cold-start reload
     asyncio.create_task(warm_up_model())
@@ -3548,16 +3548,16 @@ async def lifespan(app: FastAPI):
     # Real-time inbox relay: watch for Orb messages to CC sessions and fire them instantly.
     asyncio.create_task(_inbox_relay_loop())
     # Idle tracker: pynput keyboard/mouse hooks — zero CPU, always accurate.
-    from jtools import idle_tracker as _idle
+    from otools import idle_tracker as _idle
     _idle.start_tracking()
     # Clipboard watcher: ctypes polling, zero deps, 3s interval.
-    from jtools import clipboard_watcher as _clip
+    from otools import clipboard_watcher as _clip
     _clip.start_watching()
     # One canonical live-broadcast path: every log_activity() call (tool calls,
     # session lifecycle, training progress) also pushes {type:"session_event"}
     # to connected mobile clients — this is what makes the sessions view live
     # instead of fetch-once, for every session, not just the orb conversation.
-    from jtools.activity_log import wire_broadcast as _wire_activity_broadcast
+    from otools.activity_log import wire_broadcast as _wire_activity_broadcast
 
     _evt_last_ts: dict[str, float] = {}
 
@@ -3584,25 +3584,25 @@ async def lifespan(app: FastAPI):
     # (e.g. MyProject writing a new step) — external processes can't call
     # log_activity directly (different venv/process), so polling is how their
     # updates become live.
-    from jtools import training_watcher as _tw
+    from otools import training_watcher as _tw
     _tw.wire(push_fn=_push_notification, broadcast_fn=_broadcast_activity)
     asyncio.create_task(_tw.run_forever())
     # File-write watcher: native OS file-change events (not polling) across all
     # known project dirs, coalesced per project and fed into the same
     # log_activity -> live session_event pipeline. "What's actually being
     # worked on" — broader than git (catches uncommitted work).
-    from jtools import file_watcher as _fw
+    from otools import file_watcher as _fw
     _fw.start_watching()
     asyncio.create_task(_fw.run_forever())
     # Data-point watcher: hourly, zero-LLM collection of external data (stock
     # prices to start) into the same review pipeline — "good data in" for the
     # twice-daily synthesis to find patterns in, not a rules engine.
-    from jtools import data_watcher as _dw
+    from otools import data_watcher as _dw
     asyncio.create_task(_dw.run_forever())
     # Proactive engine: event-driven watcher; uses local Qwen for cheap screening,
     # escalates to Haiku only when local flags something worth cross-referencing.
     import proactive_engine
-    from jtools.prefs_tool import preferences_system_block as _prefs_block
+    from otools.prefs_tool import preferences_system_block as _prefs_block
 
     # Cheap tier: self-scheduled extra reviews between the two big syntheses.
     # Router (Haiku → free backends) — same brain live conversation falls back
@@ -3656,13 +3656,13 @@ async def lifespan(app: FastAPI):
 
     # Session supervision: completion pushes for every watched session, and
     # mind check-back wakes booked at every launch (nothing runs unsupervised).
-    from jtools import sessions_tool as _sess_mod
+    from otools import sessions_tool as _sess_mod
     _sess_mod.wire_notify(_push_notification)
     # Keep-him-in-the-loop watcher (his 07-03 ask: "I should be in the loop
     # and see live what's going on"): running delegated sessions push honest
     # progress on status change + crash alerts on dead PIDs, until (and
-    # after) the app's live Sessions panel exists. jtools/session_progress.py.
-    from jtools import session_progress as _sprog
+    # after) the app's live Sessions panel exists. otools/session_progress.py.
+    from otools import session_progress as _sprog
     _sprog.wire(_push_notification)
     asyncio.create_task(_sprog.run_forever())
     # In-process MCP surface for the claude-family brain (mounted at module
@@ -4368,7 +4368,7 @@ async def _card_weather(loc: str | None) -> dict:
 
 async def _card_news(topic: str) -> dict:
     """Top headlines as note lines -> render2 payload. Reuses news_tool feeds/parser."""
-    from jtools.news_tool import FEEDS, _parse_rss
+    from otools.news_tool import FEEDS, _parse_rss
     topic = (topic or "top").lower()
     if topic not in FEEDS:
         topic = "top"
@@ -4413,7 +4413,7 @@ async def _card_images(query: str | None) -> dict:
     query = (query or "").strip()
     if not query:
         return {"title": "Images", "note": "No search query given."}
-    from jtools.images_tool import search_images, _clean_query
+    from otools.images_tool import search_images, _clean_query
     results = await search_images(query, 12)
     label = _clean_query(query) or query
     title = label if len(label) <= 40 else label[:39] + "…"
@@ -4554,7 +4554,7 @@ async def proactive_status():
     """Full proactive engine state — active plan, upcoming schedule, proposals, idle.
     iOS uses this to display the Orb status panel."""
     import proactive_engine as _pe
-    from jtools.idle_tracker import idle_seconds, last_seen_iso
+    from otools.idle_tracker import idle_seconds, last_seen_iso
     from pathlib import Path as _Path
     import json as _json
 
@@ -4815,7 +4815,7 @@ async def proposal_respond(req: Request):
         if approved:
             prop = _pe.approve_proposal(pid)
             if prop:
-                from jtools.sessions_tool import start_cc_session
+                from otools.sessions_tool import start_cc_session
                 action = prop.get("action") or {}
                 if action.get("type") == "cc_session" and action.get("task"):
                     # Mind-proposed work: run EXACTLY what he approved, where he
@@ -4861,7 +4861,7 @@ async def list_sessions():
     iOS uses this for the sessions panel."""
     from pathlib import Path as _Path
     import json as _json
-    from jtools.activity_log import get_activity
+    from otools.activity_log import get_activity
     sessions_dir = _Path.home() / "Desktop" / "orb_sessions"
     sessions = []
 
@@ -4944,7 +4944,7 @@ async def session_activity(name: str, limit: int = 100):
     it, zero LLM cost to produce. iOS uses this to show real scrollback when
     opening a session's detail view, then layers the live {type:"session_event"}
     WS stream on top for anything that happens while it's open."""
-    from jtools.activity_log import get_activity
+    from otools.activity_log import get_activity
     session = "" if name.lower() == "all" else name
     return {"session": name, "activity": get_activity(session, limit=min(limit, 500))}
 
@@ -4955,7 +4955,7 @@ async def session_events(name: str, limit: int = 80):
     2c): the last ~N activity entries shaped like the live {type:"session_event"}
     WS stream — same source file — so the feed shows what an agent has BEEN
     doing the moment the page opens, and the WS stream continues it seamlessly."""
-    from jtools.activity_log import get_activity
+    from otools.activity_log import get_activity
     session = "" if name.lower() == "all" else name
     entries = get_activity(session, limit=min(int(limit), 200))
     return {"session": name,
@@ -4985,7 +4985,7 @@ async def chat_history(since: str = "", limit: int = 100):
     the newest message returned — store it and pass it back as `since` next time.
     Purely additive: reads the existing log, does not touch the live WS path.
     """
-    from jtools.activity_log import get_activity
+    from otools.activity_log import get_activity
     # Pull generously from the durable log, then keep only conversational turns.
     raw = get_activity("orb", limit=min(int(limit) * 4 + 50, 500))
     msgs = [
@@ -5015,7 +5015,7 @@ async def resume_session_endpoint(request: Request):
     if not session_name:
         return {"ok": False, "error": "session_name required"}
     extra = body.get("message", "")
-    from jtools.sessions_tool import resume_cc_session
+    from otools.sessions_tool import resume_cc_session
     result = await resume_cc_session(session_name, extra_instructions=extra)
     ok = "error" not in result.lower() and "not found" not in result.lower()
     return {"ok": ok, "message": result}
@@ -5029,7 +5029,7 @@ async def _deliver_session_message(session_name: str, message: str) -> None:
     back); anything else gets an inbox file consumed at the session's next
     breakpoint. The outcome reaches the phone as {type:"cc_reply"} plus the
     session_events message_session already logs."""
-    from jtools.sessions_tool import message_session
+    from otools.sessions_tool import message_session
     try:
         result = await message_session(session_name, message)
     except Exception as e:
@@ -5104,8 +5104,8 @@ async def _run_engine_task(name: str, engine: str, task: str) -> None:
     """A grok/codex 'session': one-shot CLI run tracked through the same status
     file + activity pipeline as cc sessions, so it shows in /api/sessions and
     the phone can watch it finish."""
-    from jtools.sessions_tool import _SESSIONS_DIR
-    from jtools.activity_log import log_activity
+    from otools.sessions_tool import _SESSIONS_DIR
+    from otools.activity_log import log_activity
     path = _SESSIONS_DIR / f"{name}.json"
 
     def _write(status: str, message: str) -> None:
@@ -5124,10 +5124,10 @@ async def _run_engine_task(name: str, engine: str, task: str) -> None:
     log_activity(name, "lifecycle", f"Started on {engine}: {task[:100]}")
     try:
         if engine.startswith("grok"):
-            from jtools.grok_tool import run_with_grok
+            from otools.grok_tool import run_with_grok
             result = await run_with_grok(task)
         else:
-            from jtools.codex_tool import run_with_codex
+            from otools.codex_tool import run_with_codex
             result = await run_with_codex(task)
         _write("done", result)
         log_activity(name, "message", f"Finished: {(result or '')[:300]}", speaker=engine)
@@ -5159,7 +5159,7 @@ async def start_session_endpoint(request: Request):
             status_code=400)
 
     if engine in ("claude-code", "claude", "cc"):
-        from jtools.sessions_tool import start_cc_session
+        from otools.sessions_tool import start_cc_session
         result = await start_cc_session(task, session_name=name,
                                         working_dir=(data.get("working_dir") or ""),
                                         engine="claude-code")
@@ -5678,7 +5678,7 @@ async def voice_ws(ws: WebSocket):
                 # Failure telemetry: an exception-eaten turn is a dead turn —
                 # count it where the synthesis reads (07-02 introspection ask).
                 try:
-                    from jtools.activity_log import log_activity as _log_act
+                    from otools.activity_log import log_activity as _log_act
                     _log_act("orb", "turn_error", f"agent spine exception: {str(e)[:160]}")
                 except Exception:
                     pass
@@ -5852,7 +5852,7 @@ async def voice_ws(ws: WebSocket):
                     spoken = ("I'm not sure what you'd like to see, sir — tell me "
                               "about something first, or name it.")
                 else:
-                    from jtools.images_tool import search_images
+                    from otools.images_tool import search_images
                     imgs = await search_images(subj, 12)
                     if imgs:
                         spoken = f"Here are some images of {subj}, sir."
@@ -5880,7 +5880,7 @@ async def voice_ws(ws: WebSocket):
                     # Too vague / no numeric series to chart -> AUTOMATICALLY give a
                     # grounded rundown card instead (no dead-end offer).
                     try:
-                        from jtools import research_tool
+                        from otools import research_tool
                         sources = await research_tool.gather(q)
                         _, rcard, _iq = await brain.research_card(q, sources=sources)
                         _set_focus(state, q)
@@ -5905,7 +5905,7 @@ async def voice_ws(ws: WebSocket):
                 # Ground the briefing in LIVE sources (current web + Wikipedia) so
                 # figures are accurate/current, not stale training memory.
                 try:
-                    from jtools import research_tool
+                    from otools import research_tool
                     sources = await research_tool.gather(q)
                 except Exception as e:
                     log.warning(f"[research] source gather failed: {e}")
@@ -5923,7 +5923,7 @@ async def voice_ws(ws: WebSocket):
                     payload["note"] = card["note"].replace("\n\n", "<br><br>").replace("\n", " ")
                 if image_query:
                     try:
-                        from jtools.images_tool import search_images
+                        from otools.images_tool import search_images
                         payload["images"] = await search_images(image_query, 6)
                     except Exception as e:
                         log.warning(f"[research] images failed: {e}")
@@ -5933,7 +5933,7 @@ async def voice_ws(ws: WebSocket):
             # STOCK / MARKET -> price chart in the HUD. Handled here (not generic
             # dispatch) because the card needs the structured price series.
             if intent.tool == "get_stock":
-                from jtools.finance_tool import get_stock as _get_stock
+                from otools.finance_tool import get_stock as _get_stock
                 d = await _get_stock(intent.args.get("query", ""))
                 if d:
                     _set_focus(state, d["name"])

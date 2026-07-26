@@ -19,7 +19,7 @@ Two outputs, both additive:
      and his notification standing. Debounced per-session + globally so a long
      stuck session can't re-nag.
 
-Scoring reuses jtools/frustration_signal.scan() (which already parses + scores
+Scoring reuses otools/frustration_signal.scan() (which already parses + scores
 every session) so this pass adds almost no cost. Muted topics are respected: a
 session whose project/last line hits a muted topic never escalates.
 """
@@ -57,7 +57,7 @@ def _minutes_since(ts: float) -> float:
 def _is_actionable(r: dict) -> tuple[bool, str]:
     """Is this scored session something the mind might help with RIGHT NOW?
     Broader than acute frustration: a stuck build counts even with no venting."""
-    from jtools import frustration_signal as fs
+    from otools import frustration_signal as fs
     level = r.get("level", "calm")
     markers = r.get("markers", {})
     if fs._ge(level, "elevated"):
@@ -74,7 +74,7 @@ def _is_actionable(r: dict) -> tuple[bool, str]:
 def snapshot() -> list[dict]:
     """Score + shape EVERY recent session. Zero-LLM. Newest-active first."""
     try:
-        from jtools import frustration_signal as fs
+        from otools import frustration_signal as fs
         results = fs.scan(hours=CONFIG["lookback_hours"])
     except Exception as e:
         log.debug(f"[session_watch] scan failed: {e}")
@@ -166,7 +166,7 @@ def _save_state(st: dict) -> None:
 
 def _muted(text: str) -> bool:
     try:
-        from jtools.muted_topics import block_reason
+        from otools.muted_topics import block_reason
         return bool(block_reason(text))
     except Exception:
         return False

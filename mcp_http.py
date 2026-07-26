@@ -133,7 +133,7 @@ async def call_tool(name: str, arguments: dict | None) -> list[types.TextContent
         # nothing on this surface is ever invisible. Orb-turn calls skip this:
         # the turn's own stream parser already logs them as session "orb".
         try:
-            from jtools.activity_log import log_activity
+            from otools.activity_log import log_activity
             log_activity("mcp", "tool_result", str(result)[:300], tool=name)
         except Exception:
             pass

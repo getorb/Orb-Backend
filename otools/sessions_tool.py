@@ -155,7 +155,7 @@ async def _relay_to_cc(session_name: str, session_id: str, message: str) -> str:
     required=["session_name", "message"],
 )
 async def message_session(session_name: str, message: str) -> str:
-    from jtools.activity_log import log_activity
+    from otools.activity_log import log_activity
     _SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
     data = _find_session(session_name)
     if not data:
@@ -187,7 +187,7 @@ async def message_session(session_name: str, message: str) -> str:
     # user is actually looking at, not a separate spawned one.
     if data.get("visible") and not ended:
         try:
-            from jtools.terminal_tool import resolve_session_window, focus_and_type
+            from otools.terminal_tool import resolve_session_window, focus_and_type
             win = resolve_session_window(data)
             if win:
                 focus_and_type(win["hwnd"], message, True)
@@ -260,7 +260,7 @@ async def start_cc_session(task: str, session_name: str = "", working_dir: str =
     visible=False (default) runs headless in background and is tracked via check_sessions.
     engine: 'claude-code'|'grok'|'grok-build'|'codex' — shown as identity label in iOS.
     machine: 'pc'|'mac' — which machine is running this."""
-    from jtools.activity_log import log_activity
+    from otools.activity_log import log_activity
     claude_bin = shutil.which("claude")
     if not claude_bin:
         return "Claude CLI not found — make sure Claude Code is installed."
@@ -286,7 +286,7 @@ async def start_cc_session(task: str, session_name: str = "", working_dir: str =
         # existing one) so this session can be reliably found+focused later by
         # title — see terminal_tool.py. Uses -p to seed the initial task;
         # terminal stays open with -NoExit for follow-up prompts.
-        from jtools.terminal_tool import resolve_shell
+        from otools.terminal_tool import resolve_shell
         # The task text used to be embedded inline, where it must survive THREE
         # parsers (wt → PowerShell → claude argv). An apostrophe in a proposal
         # description broke that chain live (wt error 0x80070002, 2026-07-02).
@@ -305,7 +305,7 @@ async def start_cc_session(task: str, session_name: str = "", working_dir: str =
         # reliable even after the terminal retitles itself (CC does this).
         hwnd = None
         try:
-            from jtools.terminal_tool import wait_for_window
+            from otools.terminal_tool import wait_for_window
             win = await wait_for_window(name, timeout=5.0)
             hwnd = win["hwnd"] if win else None
         except Exception:
@@ -397,7 +397,7 @@ async def _watch_cc_stream(name: str, proc, status_path: Path) -> None:
     session record on exit. Chunk+split (not readline) so an oversized line —
     a tool result carrying a whole file — can't blow the stream limit and
     deadlock the pipe."""
-    from jtools.activity_log import log_activity
+    from otools.activity_log import log_activity
     final = ""
     buf = b""
     sid_saved = False
@@ -523,6 +523,6 @@ async def resume_cc_session(session_name: str, extra_instructions: str = "") -> 
         stderr=asyncio.subprocess.DEVNULL,
         cwd=wd,
     )
-    from jtools.activity_log import log_activity
+    from otools.activity_log import log_activity
     log_activity(session_name, "lifecycle", f"Resumed (PID {proc.pid})")
     return f"Resumed session '{session_name}' (PID {proc.pid})."

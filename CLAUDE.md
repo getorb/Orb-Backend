@@ -41,7 +41,7 @@ Pushes go phone-ward through APNs (`apns.py`) with the user's own key.
   choke-point `_push_notification` (dedup/pacing/receipts).
 - `agent.py` — the thin agent loop (model decides talk-vs-tool; harness executes).
 - `brain.py` — brain router: Claude CLI, free backends, local floor, cooldowns.
-- `tool_registry.py` + `jtools/` — every tool, one file each, registered with
+- `tool_registry.py` + `otools/` — every tool, one file each, registered with
   `@tool(...)`; `import_all_tools()` loads them.
 - `mcp_http.py` + `orb_mcp.py` — the tool surface as MCP: resident loopback
   `/mcp` for the Claude-family brain; stdio server for Codex/Grok.

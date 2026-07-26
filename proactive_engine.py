@@ -436,7 +436,7 @@ async def _apply_plan(plan: dict) -> None:
     # told about but which is ALSO enforced here in code — a notification whose
     # title/body hits a muted topic is dropped and logged, never scheduled.
     try:
-        from jtools.muted_topics import block_reason as _muted_reason
+        from otools.muted_topics import block_reason as _muted_reason
     except Exception:
         _muted_reason = lambda *a: ""
 
@@ -476,7 +476,7 @@ async def _apply_plan(plan: dict) -> None:
     # other list caps in this schema).
     added_notes = 0
     try:
-        from jtools.notes_tool import add_note
+        from otools.notes_tool import add_note
         for n in plan.get("notes", [])[:5]:
             text = (n.get("text") or "").strip()
             if not text:
@@ -886,7 +886,7 @@ def _project_staleness() -> str:
 
 async def _weather_block() -> str:
     try:
-        from jtools.weather_tool import get_weather
+        from otools.weather_tool import get_weather
         return "  " + (await get_weather()).replace("\n", " ")
     except Exception:
         return "  (unavailable)"
@@ -894,7 +894,7 @@ async def _weather_block() -> str:
 
 async def _tech_news_block() -> str:
     try:
-        from jtools.news_tool import get_news
+        from otools.news_tool import get_news
         return "  " + (await get_news("tech", 3)).replace("\n", " ")
     except Exception:
         return "  (unavailable)"
@@ -907,7 +907,7 @@ async def _mail_block(limit: int = 5) -> str:
     run proved 'latest unread' was all newsletters). Dormant until
     GMAIL_APP_PASSWORD exists; IMAP is blocking so it runs threaded."""
     try:
-        from jtools.mail_tool import configured, primary_recent, job_signals
+        from otools.mail_tool import configured, primary_recent, job_signals
         if not configured():
             return "  (not configured — GMAIL_APP_PASSWORD not set; not an event, don't surface it)"
         prim = await asyncio.to_thread(primary_recent, limit)
@@ -928,7 +928,7 @@ def _missions_block() -> str:
     ONLY (never a nudge/note/push, even when stale); only ACTIVE-DRIVE missions
     may be surfaced. The marker is shown so the model honors the distinction."""
     try:
-        from jtools.missions_tool import active_missions, render_line, mission_surface, SURFACE_ACTIVE_DRIVE
+        from otools.missions_tool import active_missions, render_line, mission_surface, SURFACE_ACTIVE_DRIVE
         acts = active_missions()
     except Exception:
         return "  (unavailable)"
@@ -979,7 +979,7 @@ def _notes_block(limit: int = 8) -> str:
     """Recent saved notes, newest first. Past reviews' own notes land in the
     same file, so reading them back also stops duplicate note-saving."""
     try:
-        from jtools.notes_tool import recent_notes
+        from otools.notes_tool import recent_notes
         notes = recent_notes(limit)
     except Exception:
         return "  (unavailable)"
@@ -1095,7 +1095,7 @@ def get_conversation_context() -> str:
     # Active missions — week-scale goals; keeps every conversation anchored to
     # what he's actually driving at (the "presence, not assistant" bar).
     try:
-        from jtools.missions_tool import active_missions, render_line
+        from otools.missions_tool import active_missions, render_line
         acts = active_missions()
         if acts:
             parts.append("ACTIVE MISSIONS:\n" + "\n".join(
@@ -1190,7 +1190,7 @@ def get_conversation_context() -> str:
     # over the manual chats too). Awareness, not instructions: these are
     # SEPARATE conversations he had with other tools, not part of this one.
     try:
-        from jtools.cli_chats_tool import context_block as _cli_ctx
+        from otools.cli_chats_tool import context_block as _cli_ctx
         _cli = _cli_ctx(hours=12.0, max_items=3)
         if _cli:
             parts.append(
@@ -1245,7 +1245,7 @@ def get_conversation_context() -> str:
 
     # Clipboard — last copied content (short things only, skip large code blocks)
     try:
-        from jtools.clipboard_watcher import get_last as _clip_last
+        from otools.clipboard_watcher import get_last as _clip_last
         clip = _clip_last()
         if clip and len(clip) < 600:
             parts.append(f"CLIPBOARD: {clip[:300]}")
@@ -1508,7 +1508,7 @@ async def _direct_push(title: str, body: str, kind: str, key: str) -> None:
     # Muted-topics gate (2026-07-20): even zero-AI direct alerts honor the mute
     # list — the disk alert is a muted topic, so it will never push from here.
     try:
-        from jtools.muted_topics import block_reason as _muted_reason
+        from otools.muted_topics import block_reason as _muted_reason
         reason = _muted_reason(key, title, body)
     except Exception:
         reason = ""
@@ -1559,7 +1559,7 @@ def _screen_hash_quick(data: bytes) -> str:
 
 async def _tick() -> None:
     try:
-        from jtools.idle_tracker import idle_seconds
+        from otools.idle_tracker import idle_seconds
         idle = idle_seconds()
     except Exception:
         idle = 0
@@ -1660,7 +1660,7 @@ async def _run_scheduler() -> None:
     _reset_daily_extras_if_needed()
 
     try:
-        from jtools.activity_log import trim as _trim_activity
+        from otools.activity_log import trim as _trim_activity
         _trim_activity()
     except Exception:
         pass
@@ -1681,7 +1681,7 @@ async def _run_scheduler() -> None:
     # Zero-LLM, self-throttled to a few-minute cadence. Never pushes — on a genuine
     # acute episode it logs an event and asks the mind to wake and decide.
     try:
-        from jtools import frustration_signal
+        from otools import frustration_signal
         await frustration_signal.check_and_signal()
     except Exception as e:
         log.warning(f"[scheduler] frustration check failed: {e}")
@@ -1691,7 +1691,7 @@ async def _run_scheduler() -> None:
     # comprehensive live-session snapshot the mind reads (context-first) and, on a
     # session newly stuck/actionable, asks the mind to look. Never pushes.
     try:
-        from jtools import session_watch
+        from otools import session_watch
         await session_watch.watch_pass()
     except Exception as e:
         log.warning(f"[scheduler] session watch failed: {e}")
@@ -1800,7 +1800,7 @@ async def _run_high_bar_six_hour_scan(label: str = "6h scan") -> str:
     on Claude credits or a task re-arming itself. Writes the proactive surface;
     pushes only for genuinely time-critical unmuted items (disk never pushes)."""
     try:
-        from jtools.muted_topics import block_reason as _muted_reason
+        from otools.muted_topics import block_reason as _muted_reason
     except Exception:
         def _muted_reason(*_a, **_k):
             return ""
@@ -1810,7 +1810,7 @@ async def _run_high_bar_six_hour_scan(label: str = "6h scan") -> str:
 
     # Live work / CLI sessions (context-first signal)
     try:
-        from jtools import session_watch
+        from otools import session_watch
         block = session_watch.live_sessions_block()
         if block and block.strip():
             findings.append("LIVE WORK:\n" + block.strip()[:900])
@@ -1819,7 +1819,7 @@ async def _run_high_bar_six_hour_scan(label: str = "6h scan") -> str:
 
     # Frustration / stuck signals
     try:
-        from jtools.frustration_signal import signal_block
+        from otools.frustration_signal import signal_block
         fb = (signal_block() or "").strip()
         if fb:
             findings.append(fb[:500])
@@ -1828,7 +1828,7 @@ async def _run_high_bar_six_hour_scan(label: str = "6h scan") -> str:
 
     # Missions = silent context only (never a push trigger from this scan)
     try:
-        from jtools.missions_tool import active_missions, render_line
+        from otools.missions_tool import active_missions, render_line
         acts = active_missions()
         if acts:
             findings.append("MISSIONS (silent context):\n" + "\n".join(
@@ -2008,7 +2008,7 @@ async def _run_review(since_hours: float, label: str, use_synthesis: bool = Fals
 
     # Clipboard snapshot for review
     try:
-        from jtools.clipboard_watcher import get_last as _clip_last
+        from otools.clipboard_watcher import get_last as _clip_last
         clip_preview = _clip_last()[:300] if _clip_last() else "(empty)"
     except Exception:
         clip_preview = "(unavailable)"
@@ -2049,7 +2049,7 @@ async def _run_review(since_hours: float, label: str, use_synthesis: bool = Fals
     browser_block  = "\n".join(f"  [{e['ts'][11:16]}] {e.get('browser','')}: {e.get('page','')[:80]}" for e in browser_events[-10:]) or "  (none)"
     game_block     = f"  {len(game_events)} session(s) started" if game_events else "  (none)"
     try:
-        from jtools.data_watcher import recent_summary as _watched_summary
+        from otools.data_watcher import recent_summary as _watched_summary
         watched_block = _watched_summary(hours=max(since_hours, 24.0))
     except Exception:
         watched_block = "  (unavailable)"
@@ -2059,27 +2059,27 @@ async def _run_review(since_hours: float, label: str, use_synthesis: bool = Fals
     notes_block       = _notes_block()
     ignored_block     = _ignored_topics_block()
     try:
-        from jtools.muted_topics import render_block as _muted_render
+        from otools.muted_topics import render_block as _muted_render
         muted_block = _muted_render()
     except Exception:
         muted_block = "  (unavailable)"
     try:
-        from jtools.prefs_tool import preferences_system_block as _prefs_block
+        from otools.prefs_tool import preferences_system_block as _prefs_block
         prefs_block = _prefs_block() or "  (none)"
     except Exception:
         prefs_block = "  (unavailable)"
     try:
-        from jtools.cli_chats_tool import synthesis_block as _cli_chats
+        from otools.cli_chats_tool import synthesis_block as _cli_chats
         cli_chats_block = _cli_chats(hours=max(since_hours, 12.0))
     except Exception:
         cli_chats_block = "  (unavailable)"
     try:
-        from jtools.frustration_signal import signal_block as _frustration_block
+        from otools.frustration_signal import signal_block as _frustration_block
         frustration_block = _frustration_block() or "  (nothing — his sessions read calm)"
     except Exception:
         frustration_block = "  (unavailable)"
     try:
-        from jtools.session_watch import live_sessions_block as _live_block
+        from otools.session_watch import live_sessions_block as _live_block
         live_sessions = _live_block() or "  (no live sessions right now)"
     except Exception:
         live_sessions = "  (unavailable)"
@@ -2331,7 +2331,7 @@ Rules:
     _trim_events_log()
 
     try:
-        from jtools.muted_topics import block_reason as _muted_reason
+        from otools.muted_topics import block_reason as _muted_reason
     except Exception:
         _muted_reason = lambda *a: ""
 

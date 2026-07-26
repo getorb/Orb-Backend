@@ -39,7 +39,7 @@ from pathlib import Path
 
 import agent
 import orb_memory as memory
-from jtools.activity_log import log_activity
+from otools.activity_log import log_activity
 
 log = logging.getLogger("orb")
 
@@ -211,7 +211,7 @@ def _active_work_block() -> str:
     # which are actionable (a stuck build you could advance). This is the fast-lane
     # snapshot refreshed every ~90s — the primary "what is he doing now" signal.
     try:
-        from jtools.session_watch import live_sessions_block as _live
+        from otools.session_watch import live_sessions_block as _live
         live = _live()
         if live:
             parts.append("Live sessions (comprehensive — help an ★ACTIONABLE one within your envelope):\n" + live)
@@ -219,7 +219,7 @@ def _active_work_block() -> str:
         pass
     # His real work threads in his own words (Claude Code / Codex / Grok transcripts).
     try:
-        from jtools.cli_chats_tool import context_block as _cli_ctx
+        from otools.cli_chats_tool import context_block as _cli_ctx
         cli = _cli_ctx(hours=6.0, max_items=3)
         if cli:
             parts.append("His recent AI-CLI work threads (what he's actually building):\n" + cli)
@@ -240,7 +240,7 @@ def _active_work_block() -> str:
 
 def _muted_block() -> str:
     try:
-        from jtools.muted_topics import render_block
+        from otools.muted_topics import render_block
         return render_block()
     except Exception:
         return "  (unavailable)"
@@ -248,7 +248,7 @@ def _muted_block() -> str:
 
 def _prefs_block() -> str:
     try:
-        from jtools.prefs_tool import preferences_system_block
+        from otools.prefs_tool import preferences_system_block
         return preferences_system_block() or "  (none)"
     except Exception:
         return "  (unavailable)"
@@ -256,7 +256,7 @@ def _prefs_block() -> str:
 
 def _presence_line() -> str:
     try:
-        from jtools.idle_tracker import idle_seconds
+        from otools.idle_tracker import idle_seconds
         idle = idle_seconds()
     except Exception:
         return "presence unknown"
@@ -358,7 +358,7 @@ class _WakeTrace:
 
 def _make_dispatcher(s: dict, trace: _WakeTrace):
     try:
-        from jtools.muted_topics import block_reason as _mr
+        from otools.muted_topics import block_reason as _mr
     except Exception:
         _mr = lambda *a: ""
 
@@ -557,7 +557,7 @@ did, what to check next. No theater."""
 
 def _wake_context(s: dict, deep: bool, reason: str) -> str:
     try:
-        from jtools.missions_tool import active_missions, render_line
+        from otools.missions_tool import active_missions, render_line
         missions = "\n".join("  • " + render_line(m, show_surface=True)
                              for m in active_missions()[:5]) or "  (none)"
     except Exception:
@@ -571,7 +571,7 @@ def _wake_context(s: dict, deep: bool, reason: str) -> str:
                f"expressions left: {MAX_EXPRESS_DAY - s['expressions_today']}  |  "
                f"steps this wake: {MAX_STEPS_DEEP if deep else MAX_STEPS_CHEAP}")
     try:
-        from jtools.frustration_signal import signal_block as _frust
+        from otools.frustration_signal import signal_block as _frust
         frustration = _frust()
     except Exception:
         frustration = ""

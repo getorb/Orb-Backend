@@ -7,7 +7,7 @@ from xml.etree import ElementTree as ET
 import httpx
 
 from tool_registry import tool
-from jtools.cache_util import ttl_cache
+from otools.cache_util import ttl_cache
 
 log = logging.getLogger("orb.tools.news")
 

@@ -134,7 +134,7 @@ def _audit(kind: str, text: str, **extra) -> None:
     INVISIBLE — 'what did Grok just do?' was unanswerable, which is untenable
     for a surface that includes PC control."""
     try:
-        from jtools.activity_log import log_activity
+        from otools.activity_log import log_activity
         log_activity("mcp", kind, text, **extra)
     except Exception:
         pass

@@ -3,7 +3,7 @@
 WHAT THIS IS
 ------------
 A zero-LLM read-the-room sensor. It scans a recent window of his manual
-Claude Code / Codex / Grok transcripts (the same files jtools/cli_chats_tool.py
+Claude Code / Codex / Grok transcripts (the same files otools/cli_chats_tool.py
 already reads) and estimates how stuck or worn down he is right now — so the
 proactive engine / mind can *notice* and gently check in, instead of waiting
 for him to say something.
@@ -292,7 +292,7 @@ def _timed_turns_for(rec: dict) -> list[dict]:
     """Ordered [{role, ts, text}] for one session record from cli_chats_tool.
     Claude Code carries per-line timestamps (full time-based markers); Codex and
     Grok degrade to text-only markers (ts=None) — documented, acceptable."""
-    from jtools import cli_chats_tool as cc  # local import: avoid load-order issues
+    from otools import cli_chats_tool as cc  # local import: avoid load-order issues
     tool = rec.get("tool")
     path = Path(rec.get("path", ""))
     out: list[dict] = []
@@ -346,7 +346,7 @@ def scan(hours: float | None = None) -> list[dict]:
     """Score every recent CLI session. Returns a list of result dicts (one per
     session that met the minimum-turns bar), newest-active first, each carrying
     its cli_chats record under 'session'. Zero LLM calls."""
-    from jtools import cli_chats_tool as cc
+    from otools import cli_chats_tool as cc
     hrs = float(hours if hours is not None else CONFIG["lookback_hours"])
     try:
         recs = cc.collect_cli_chats(hours=hrs, limit=20)

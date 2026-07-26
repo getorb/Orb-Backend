@@ -4,7 +4,7 @@ Runs two daemon listeners (keyboard + mouse) that update a shared timestamp on
 any input event. Zero CPU at idle — pynput uses OS hooks, not polling.
 
 Usage anywhere in the codebase:
-    from jtools.idle_tracker import idle_seconds, is_idle, start_tracking
+    from otools.idle_tracker import idle_seconds, is_idle, start_tracking
 
 Call start_tracking() once at startup (server_win.py lifespan). After that,
 idle_seconds() is always accurate with no async overhead.

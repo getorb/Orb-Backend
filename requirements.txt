@@ -18,5 +18,5 @@ watchdog>=4.0          # file-activity watcher
 pywin32>=306; sys_platform == "win32"
 qrcode>=7.4            # setup wizard QR codes
 
-# Optional — local TTS fallback (jtools/tts_local.py):
+# Optional — local TTS fallback (otools/tts_local.py):
 #   pip install kokoro-onnx soundfile
