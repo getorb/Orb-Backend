@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/iOS%20app-live-black?logo=apple&logoColor=white" alt="iOS app live">
 </p>
 
-<p align="center"><b>The brain behind <a href="https://orb.nathanlangley.dev">Orb</a> —
+<p align="center"><b>The backend behind <a href="https://orb.nathanlangley.dev">Orb</a> —
 the AI assistant that talks first, on hardware you own.</b></p>
 
 <p align="center">
