@@ -9,7 +9,7 @@
 </p>
 
 <p align="center"><b>The backend behind <a href="https://orb.nathanlangley.dev">Orb</a> —
-the AI assistant that talks first, on hardware you own.</b></p>
+the AI assistant that talks first.</b></p>
 
 <p align="center">
   <a href="https://apps.apple.com/us/app/orb-ai/id6776376035"><b>Get the app</b></a> ·
@@ -18,11 +18,11 @@ the AI assistant that talks first, on hardware you own.</b></p>
   <a href="SELF_HOSTING.md"><b>Every setting</b></a>
 </p>
 
-The iOS app is the face; this server is everything behind it. The app works out of
-the box on-device — this server is the optional half that gives it hands, memory,
-and a machine of its own. Orb doesn't wait to be asked: the backend watches over
+You can pair the free iOS app to this server for your own Orb backend. The app works
+on-device — this server is the optional half that gives it capabilities, memory,
+and access to your machine. Orb doesn't wait to be asked: the backend watches over
 your projects, keeps a running model of what's going on, plans ahead, does approved
-work on its own, and reaches your phone only when it's genuinely worth your
+work on its own, and reaches your phone only when it's worth your
 attention.
 
 ## What it does
